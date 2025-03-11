@@ -1,285 +1,236 @@
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, User, Bell, Shield, HelpCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { LanguageSelect } from "@/components/LanguageSelect";
+import { Mail, Lock, Bell, HelpCircle, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const Settings = () => {
-  const handleSave = () => {
+export default function Settings() {
+  const { toast } = useToast();
+  const [outlookConnected, setOutlookConnected] = useState(false);
+
+  const handleOutlookConnect = () => {
+    // This would be replaced with actual OAuth flow
     toast({
-      title: "Settings saved",
-      description: "Your settings have been saved successfully.",
+      title: "Outlook Integration",
+      description: "Connecting to Outlook... (Simulated for demo)",
+    });
+    
+    // Simulate successful connection
+    setTimeout(() => {
+      setOutlookConnected(true);
+      toast({
+        title: "Success!",
+        description: "Your Outlook account has been connected.",
+      });
+    }, 1500);
+  };
+
+  const handleOutlookDisconnect = () => {
+    setOutlookConnected(false);
+    toast({
+      title: "Disconnected",
+      description: "Your Outlook account has been disconnected.",
     });
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences.
-          </p>
-        </div>
-        <SettingsIcon className="h-8 w-8 text-muted-foreground" />
-      </div>
-
+    <div className="animate-fade-in">
+      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+      
       <Tabs defaultValue="account" className="w-full">
-        <TabsList className="grid w-full md:w-auto grid-cols-4 md:grid-cols-4">
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="help">Help</TabsTrigger>
+        <TabsList className="mb-6">
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Account
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Integrations
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="language" className="flex items-center gap-2">
+            <HelpCircle className="h-4 w-4" />
+            Language
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="account" className="mt-6 space-y-4">
+        
+        <TabsContent value="account">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Personal Information
-              </CardTitle>
-              <CardDescription>
-                Update your personal information and profile settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="pt-6">
+              <div className="grid gap-4 max-w-xl">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <input
-                    id="name"
-                    className="w-full p-2 border rounded-md"
-                    defaultValue="John Doe"
-                  />
+                  <Input id="name" placeholder="Your name" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <input
-                    id="email"
-                    type="email"
-                    className="w-full p-2 border rounded-md"
-                    defaultValue="john.doe@example.com"
-                  />
+                  <Input id="email" type="email" placeholder="your.email@example.com" />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <select
-                  id="role"
-                  className="w-full p-2 border rounded-md"
-                  defaultValue="investor_services"
-                >
-                  <option value="investor_services">Investor Services</option>
-                  <option value="legal_services">Legal Services</option>
-                  <option value="property_development">Property Development</option>
-                  <option value="senior_management">Senior Management</option>
-                </select>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave}>Save Changes</Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-              <CardDescription>
-                Customize your experience with the CRM.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="dark-mode">Dark Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Toggle between light and dark mode.
-                  </p>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Input id="role" placeholder="Your role" disabled value="Senior Management" />
                 </div>
-                <Switch id="dark-mode" />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="compact-view">Compact View</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display more items on a single page.
-                  </p>
-                </div>
-                <Switch id="compact-view" />
+                <Button className="w-fit">Save Changes</Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="notifications" className="mt-6 space-y-4">
+        
+        <TabsContent value="notifications">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Settings
-              </CardTitle>
-              <CardDescription>
-                Choose how you want to be notified.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications via email.
-                  </p>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 max-w-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Email Notifications</p>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications when there's activity on your leads.
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch id="email-notifications" defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="browser-notifications">Browser Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications in your browser.
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Approval Notifications</p>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when a lead requires your approval.
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch id="browser-notifications" />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="lead-alerts">Lead Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified about new leads and updates.
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">New Enquiry Alerts</p>
+                    <p className="text-sm text-muted-foreground">
+                      Be alerted when new enquiries are received from Outlook.
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch id="lead-alerts" defaultChecked />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave}>Save Preferences</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security" className="mt-6 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Security Settings
-              </CardTitle>
-              <CardDescription>
-                Manage your security preferences and login methods.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <input
-                  id="current-password"
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <input
-                  id="new-password"
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSave}>Update Password</Button>
-            </CardFooter>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>
-                Add an extra layer of security to your account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="two-factor">Enable 2FA</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Protect your account with two-factor authentication.
-                  </p>
-                </div>
-                <Switch id="two-factor" />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="help" className="mt-6 space-y-4">
+        
+        <TabsContent value="integrations">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5" />
-                Help & Support
-              </CardTitle>
-              <CardDescription>
-                Get assistance and learn more about using the CRM.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Documentation</h3>
-                <p className="text-muted-foreground">
-                  Access comprehensive guides and tutorials to help you use the CRM effectively.
-                </p>
-                <Button variant="outline" className="mt-2">
-                  View Documentation
-                </Button>
+            <CardContent className="pt-6">
+              <div className="grid gap-6 max-w-xl">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Microsoft Outlook Integration</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Connect your Outlook account to sync emails and create leads from your inbox.
+                  </p>
+                  
+                  {outlookConnected ? (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center">
+                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3">
+                          Connected
+                        </div>
+                        <span className="text-sm">your.email@outlook.com</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => toast({
+                            title: "Sync Complete",
+                            description: "Your emails have been synchronized"
+                          })}
+                        >
+                          Sync Emails
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          onClick={handleOutlookDisconnect}
+                        >
+                          Disconnect
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button onClick={handleOutlookConnect}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Connect Outlook
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-2">Email Sync Settings</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Auto-sync new emails</p>
+                        <p className="text-sm text-muted-foreground">
+                          Automatically sync new emails from your connected account
+                        </p>
+                      </div>
+                      <Switch defaultChecked disabled={!outlookConnected} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Auto-create enquiries</p>
+                        <p className="text-sm text-muted-foreground">
+                          Automatically create enquiries from new emails
+                        </p>
+                      </div>
+                      <Switch disabled={!outlookConnected} />
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Contact Support</h3>
-                <p className="text-muted-foreground">
-                  Need help? Our support team is ready to assist you.
-                </p>
-                <Button variant="outline" className="mt-2">
-                  Contact Support
-                </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="security">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 max-w-xl">
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <Input id="current-password" type="password" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input id="new-password" type="password" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Input id="confirm-password" type="password" />
+                </div>
+                <Button className="w-fit">Update Password</Button>
               </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">FAQ</h3>
-                <p className="text-muted-foreground">
-                  Find answers to commonly asked questions.
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="language">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 max-w-xl">
+                <div className="space-y-2">
+                  <Label htmlFor="language">Interface Language</Label>
+                  <LanguageSelect />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  The CRM supports English, Russian, Turkish, and Azerbaijani. 
+                  Changing the language will update all interface text.
                 </p>
-                <Button variant="outline" className="mt-2">
-                  View FAQ
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -287,6 +238,4 @@ const Settings = () => {
       </Tabs>
     </div>
   );
-};
-
-export default Settings;
+}
