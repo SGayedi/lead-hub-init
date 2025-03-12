@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ export default function CalendarPage() {
   const [monthStart, setMonthStart] = useState<Date>(startOfMonth(new Date()));
   const [monthEnd, setMonthEnd] = useState<Date>(endOfMonth(new Date()));
 
-  // Update month range when selected date changes
   useEffect(() => {
     if (selectedDate) {
       setMonthStart(startOfMonth(selectedDate));
@@ -21,20 +19,18 @@ export default function CalendarPage() {
     }
   }, [selectedDate]);
 
-  // Fetch meetings for the entire month
   const { meetings, isLoading: isLoadingMeetings } = useMeetings({
     startDate: monthStart,
     endDate: monthEnd,
   });
 
-  // Fetch tasks for the entire month
   const { tasks, isLoading: isLoadingTasks } = useTasks({
     startDate: monthStart,
     endDate: monthEnd,
   });
 
   return (
-    <div className="p-6">
+    <div className="p-6 animate-fade-in">
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>

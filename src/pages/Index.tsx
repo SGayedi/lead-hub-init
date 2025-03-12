@@ -8,7 +8,7 @@ const Index = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <Button onClick={() => navigate("/leads")}>View Leads</Button>
