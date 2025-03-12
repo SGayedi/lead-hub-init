@@ -1,232 +1,222 @@
+
 import { useState } from "react";
+import { PlusCircle, Search, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Clock, CheckCircle, Archive, AlertTriangle } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { LeadCreationForm } from "@/components/LeadCreationForm";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { 
+  Table, 
+  TableHeader, 
+  TableRow, 
+  TableHead, 
+  TableBody, 
+  TableCell 
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useLeads } from "@/hooks/useLeads";
-import { LeadStatus } from "@/types/crm";
+import { LeadCreationForm } from "@/components/LeadCreationForm";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Lead, LeadStatus } from "@/types/crm";
+import { toast } from "sonner";
 
 export default function Leads() {
-  const { leads, isLoading, approveLead, rejectLead, archiveLead } = useLeads();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<LeadStatus | "all">("active");
-  const [createLeadOpen, setCreateLeadOpen] = useState(false);
-
-  const getPriorityColor = (priority: Lead["priority"]) => {
+  const [filterStatus, setFilterStatus] = useState<LeadStatus | 'all'>('all');
+  const { leads, isLoading, searchTerm, setSearchTerm } = useLeads(filterStatus);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high":
-        return "bg-red-500";
-      case "medium":
-        return "bg-amber-500";
-      case "low":
-        return "bg-green-500";
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  const getStatusDetails = (status: LeadStatus) => {
+  
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return { icon: <CheckCircle className="h-4 w-4 text-green-500" />, label: "Active" };
-      case "waiting_for_details":
-        return { icon: <Clock className="h-4 w-4 text-amber-500" />, label: "Waiting for Details" };
-      case "waiting_for_approval":
-        return { icon: <AlertTriangle className="h-4 w-4 text-blue-500" />, label: "Waiting for Approval" };
-      case "archived":
-        return { icon: <Archive className="h-4 w-4 text-gray-500" />, label: "Archived" };
-      case "rejected":
-        return { icon: <AlertTriangle className="h-4 w-4 text-red-500" />, label: "Rejected" };
+      case 'active': return 'bg-emerald-100 text-emerald-800';
+      case 'archived': return 'bg-gray-100 text-gray-800';
+      case 'waiting_for_details': return 'bg-blue-100 text-blue-800';
+      case 'waiting_for_approval': return 'bg-purple-100 text-purple-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
-
-  const handleApprove = (leadId: string) => {
-    approveLead.mutate(leadId);
-  };
-
-  const handleReject = (leadId: string) => {
-    rejectLead.mutate(leadId);
-  };
-
-  const handleArchive = (leadId: string) => {
-    archiveLead.mutate(leadId);
-  };
-
-  const filteredLeads = leads.filter(lead => {
-    if (activeTab !== "all" && lead.status !== activeTab) {
-      return false;
+  
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Active';
+      case 'archived': return 'Archived';
+      case 'waiting_for_details': return 'Waiting for Details';
+      case 'waiting_for_approval': return 'Waiting for Approval';
+      case 'rejected': return 'Rejected';
+      default: return status;
     }
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        lead.name.toLowerCase().includes(query) ||
-        lead.email?.toLowerCase().includes(query) ||
-        lead.source.toLowerCase().includes(query)
-      );
-    }
-    
-    return true;
-  });
-
+  };
+  
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Leads</h1>
-        <Sheet open={createLeadOpen} onOpenChange={setCreateLeadOpen}>
-          <SheetTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Lead
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>Create New Lead</SheetTitle>
-            </SheetHeader>
-            <div className="py-4">
-              <LeadCreationForm 
-                onSuccess={() => setCreateLeadOpen(false)}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="mb-6">
-        <div className="flex gap-4 mb-4">
-          <div className="relative flex-1">
+    <div className="p-6 max-w-7xl mx-auto">
+      <header className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+          <p className="text-muted-foreground">
+            Manage your leads and opportunities
+          </p>
+        </div>
+        <Button 
+          className="mt-4 md:mt-0" 
+          onClick={() => setShowCreateDialog(true)}
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Create Lead
+        </Button>
+      </header>
+      
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search leads..."
               className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+          
+          <Select 
+            value={filterStatus} 
+            onValueChange={(value) => setFilterStatus(value as LeadStatus | 'all')}
+          >
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Leads</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="waiting_for_details">Waiting for Details</SelectItem>
+              <SelectItem value="waiting_for_approval">Waiting for Approval</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
-        <Tabs 
-          defaultValue="active" 
-          className="w-full"
-          onValueChange={setActiveTab}
-        >
-          <TabsList>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="waiting_for_details">Waiting for Details</TabsTrigger>
-            <TabsTrigger value="waiting_for_approval">Waiting for Approval</TabsTrigger>
-            <TabsTrigger value="archived">Archived</TabsTrigger>
-            <TabsTrigger value="all">All Leads</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      <div className="grid gap-4">
-        {isLoading ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <p className="text-muted-foreground">Loading leads...</p>
-            </CardContent>
-          </Card>
-        ) : filteredLeads.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <p className="text-muted-foreground">No leads found matching your criteria</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredLeads.map((lead) => {
-            const statusDetails = getStatusDetails(lead.status);
-            
-            return (
-              <Card key={lead.id} className="animate-slide-in">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl font-medium">{lead.name}</CardTitle>
-                    <div className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded-full">
-                      {statusDetails.icon}
-                      <span>{statusDetails.label}</span>
-                    </div>
-                  </div>
-                  <div className={`${getPriorityColor(lead.priority)} w-3 h-3 rounded-full`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm font-medium">Inquiry Type</p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {lead.inquiryType}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Source</p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {lead.source}
-                      </p>
-                    </div>
-                    {lead.exportQuota !== undefined && (
-                      <div>
-                        <p className="text-sm font-medium">Export Quota</p>
-                        <p className="text-sm text-muted-foreground">
-                          {lead.exportQuota}%
-                        </p>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    Loading leads...
+                  </TableCell>
+                </TableRow>
+              ) : leads.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    No leads found. Create your first lead to get started.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                leads.map((lead) => (
+                  <TableRow key={lead.id}>
+                    <TableCell className="font-medium">{lead.name}</TableCell>
+                    <TableCell>
+                      {lead.inquiryType === 'company' ? 'Company' : 'Individual'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={getPriorityColor(lead.priority)}
+                      >
+                        {lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {lead.source.charAt(0).toUpperCase() + lead.source.slice(1)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={getStatusColor(lead.status)}
+                      >
+                        {getStatusLabel(lead.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{lead.email || '-'}</TableCell>
+                    <TableCell>
+                      {new Date(lead.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {lead.status === 'waiting_for_approval' && (
+                          <>
+                            <Button 
+                              size="icon" 
+                              variant="ghost"
+                              className="h-8 w-8 text-green-600"
+                              title="Approve"
+                              onClick={() => toast.success("Approved! This functionality will be implemented soon.")}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost"
+                              className="h-8 w-8 text-red-600"
+                              title="Reject"
+                              onClick={() => toast.error("Rejected! This functionality will be implemented soon.")}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        {lead.status === 'waiting_for_details' && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost"
+                            className="h-8 w-8"
+                            title="Mark as Complete"
+                            onClick={() => toast.info("Soon you'll be able to update lead details here!")}
+                          >
+                            <Clock className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    )}
-                    {lead.plotSize !== undefined && (
-                      <div>
-                        <p className="text-sm font-medium">Plot Size</p>
-                        <p className="text-sm text-muted-foreground">
-                          {lead.plotSize} hectares
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {lead.status === "waiting_for_approval" && (
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" onClick={() => handleApprove(lead.id)}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleReject(lead.id)}>
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {lead.status === "active" && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleArchive(lead.id)}
-                    >
-                      <Archive className="h-4 w-4 mr-2" />
-                      Archive
-                    </Button>
-                  )}
-                  
-                  {lead.status === "waiting_for_details" && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => toast({
-                        title: "Edit Lead",
-                        description: "Editing functionality will be implemented in the next phase"
-                      })}
-                    >
-                      Update Details
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
+      
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogTitle>Create New Lead</DialogTitle>
+          <LeadCreationForm onSuccess={() => setShowCreateDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

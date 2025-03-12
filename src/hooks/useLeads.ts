@@ -1,99 +1,58 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Lead } from "@/types/crm";
-import { toast } from "sonner";
-import { useAuth } from "./useAuth";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Lead, LeadStatus } from '@/types/crm';
 
-export const useLeads = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+// Function to convert database lead to frontend Lead type
+const convertDbLeadToLead = (dbLead: any): Lead => ({
+  id: dbLead.id,
+  name: dbLead.name,
+  inquiryType: dbLead.inquiry_type,
+  priority: dbLead.priority,
+  source: dbLead.source,
+  status: dbLead.status,
+  exportQuota: dbLead.export_quota,
+  plotSize: dbLead.plot_size,
+  email: dbLead.email,
+  phone: dbLead.phone,
+  notes: dbLead.notes,
+  outlookEmailId: dbLead.outlook_email_id,
+  createdAt: dbLead.created_at,
+  updatedAt: dbLead.updated_at
+});
 
-  const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
+export function useLeads(status: LeadStatus | 'all' = 'all') {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['leads', status, searchTerm],
     queryFn: async () => {
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from("leads")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        toast.error("Failed to fetch leads");
-        throw error;
+      let query = supabase.from('leads').select('*');
+      
+      if (status !== 'all') {
+        query = query.eq('status', status);
       }
-
-      return data as Lead[];
-    },
-    enabled: !!user
-  });
-
-  const approveLead = useMutation({
-    mutationFn: async (leadId: string) => {
-      if (!user) throw new Error("User not authenticated");
       
-      const { error } = await supabase
-        .from("leads")
-        .update({ status: "active" })
-        .eq("id", leadId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Lead approved successfully");
-    },
-    onError: () => {
-      toast.error("Failed to approve lead");
-    }
-  });
-
-  const rejectLead = useMutation({
-    mutationFn: async (leadId: string) => {
-      if (!user) throw new Error("User not authenticated");
+      if (searchTerm) {
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
       
-      const { error } = await supabase
-        .from("leads")
-        .update({ status: "rejected" })
-        .eq("id", leadId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Lead rejected successfully");
-    },
-    onError: () => {
-      toast.error("Failed to reject lead");
-    }
-  });
-
-  const archiveLead = useMutation({
-    mutationFn: async (leadId: string) => {
-      if (!user) throw new Error("User not authenticated");
+      const { data, error } = await query.order('created_at', { ascending: false });
       
-      const { error } = await supabase
-        .from("leads")
-        .update({ status: "archived" })
-        .eq("id", leadId);
-
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast.success("Lead archived successfully");
-    },
-    onError: () => {
-      toast.error("Failed to archive lead");
+      
+      // Convert database leads to frontend Lead type
+      return data.map(convertDbLeadToLead);
     }
   });
 
   return {
-    leads,
+    leads: data || [],
     isLoading,
-    approveLead,
-    rejectLead,
-    archiveLead
+    error,
+    refetch,
+    searchTerm,
+    setSearchTerm
   };
-};
+}

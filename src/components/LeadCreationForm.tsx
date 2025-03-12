@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +85,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
   const queryClient = useQueryClient();
 
   const createLead = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData & { status?: string }) => {
       const { error } = await supabase
         .from("leads")
         .insert([{
@@ -92,6 +93,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
           inquiry_type: data.inquiryType,
           priority: data.priority,
           source: data.source,
+          status: data.status || "active",
           export_quota: data.exportQuota ? parseInt(data.exportQuota) : null,
           plot_size: data.plotSize ? parseFloat(data.plotSize) : null,
           email: data.email,
@@ -125,8 +127,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
       Number(formData.plotSize) < 1;
     
     if (isCoreInvestor && hasInsufficientData) {
-      const detailsToast = toast({
-        title: "Insufficient Data for Core Investor",
+      toast({
         description: "This lead doesn't meet core investor criteria. How would you like to proceed?",
         action: (
           <div className="flex gap-2 mt-2">
@@ -138,7 +139,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
                   ...formData,
                   status: "waiting_for_details"
                 });
-                detailsToast.dismiss();
+                toast.dismiss();
               }}
             >
               Wait for Details
@@ -150,7 +151,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
                   ...formData,
                   status: "waiting_for_approval"
                 });
-                detailsToast.dismiss();
+                toast.dismiss();
               }}
             >
               Request Approval
