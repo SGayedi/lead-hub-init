@@ -11,7 +11,6 @@ import Leads from "./pages/Leads";
 import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
 import Settings from "./pages/Settings";
-import Enquiries from "./pages/Enquiries";
 import NotFound from "./pages/NotFound";
 import { useOutlookAuth } from "./hooks/useOutlookAuth";
 import { Toaster as SonnerToaster } from "sonner";
@@ -39,7 +38,6 @@ function App() {
               <Route path="leads" element={<Leads />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="meetings" element={<Meetings />} />
-              <Route path="enquiries" element={<Enquiries />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
