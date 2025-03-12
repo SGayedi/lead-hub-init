@@ -117,7 +117,6 @@ export type Database = {
           inquiry_type: string
           name: string
           notes: string | null
-          outlook_email_id: string | null
           phone: string | null
           plot_size: number | null
           priority: string
@@ -133,7 +132,6 @@ export type Database = {
           inquiry_type: string
           name: string
           notes?: string | null
-          outlook_email_id?: string | null
           phone?: string | null
           plot_size?: number | null
           priority: string
@@ -149,7 +147,6 @@ export type Database = {
           inquiry_type?: string
           name?: string
           notes?: string | null
-          outlook_email_id?: string | null
           phone?: string | null
           plot_size?: number | null
           priority?: string
@@ -248,89 +245,6 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      outlook_emails: {
-        Row: {
-          associated_lead_id: string | null
-          body: string
-          created_at: string
-          has_attachments: boolean
-          id: string
-          is_enquiry: boolean
-          read: boolean
-          received_at: string
-          sender_email: string
-          sender_name: string
-          subject: string
-          updated_at: string
-        }
-        Insert: {
-          associated_lead_id?: string | null
-          body: string
-          created_at?: string
-          has_attachments?: boolean
-          id?: string
-          is_enquiry?: boolean
-          read?: boolean
-          received_at: string
-          sender_email: string
-          sender_name: string
-          subject: string
-          updated_at?: string
-        }
-        Update: {
-          associated_lead_id?: string | null
-          body?: string
-          created_at?: string
-          has_attachments?: boolean
-          id?: string
-          is_enquiry?: boolean
-          read?: boolean
-          received_at?: string
-          sender_email?: string
-          sender_name?: string
-          subject?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "outlook_emails_associated_lead_id_fkey"
-            columns: ["associated_lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      outlook_tokens: {
-        Row: {
-          access_token: string
-          created_at: string
-          expires_at: string
-          id: string
-          refresh_token: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          refresh_token: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          refresh_token?: string
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
