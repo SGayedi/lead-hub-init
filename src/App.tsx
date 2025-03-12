@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
@@ -15,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import { useOutlookAuth } from "./hooks/useOutlookAuth";
 import { Toaster as SonnerToaster } from "sonner";
 import "./App.css";
+import Calendar from "./pages/Calendar";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -38,6 +38,7 @@ function App() {
               <Route path="leads" element={<Leads />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="meetings" element={<Meetings />} />
+              <Route path="calendar" element={<Calendar />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
