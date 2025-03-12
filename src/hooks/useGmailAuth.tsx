@@ -4,20 +4,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useOutlookAuth() {
+export function useGmailAuth() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const handleGmailCallback = async () => {
-      // Check if URL contains parameters from the OAuth callback
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
       const error = params.get('error');
       const state = params.get('state');
       
-      // Clear the URL parameters
       if (code || error) {
         navigate(location.pathname, { replace: true });
       }
@@ -56,7 +54,6 @@ export function useOutlookAuth() {
             description: "Your Gmail account has been connected!",
           });
           
-          // Redirect to settings page
           navigate('/settings');
         } catch (error) {
           console.error("Error in callback processing:", error);

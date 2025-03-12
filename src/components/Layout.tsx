@@ -6,7 +6,6 @@ import { AppSidebar } from "./AppSidebar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 export const Layout = () => {
   const [showSetupAlert, setShowSetupAlert] = useState(false);
