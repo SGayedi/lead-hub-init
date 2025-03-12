@@ -17,31 +17,31 @@ export type LeadStatus =
 export interface Lead {
   id: string;
   name: string;
-  inquiryType: InquiryType;
+  inquiry_type: InquiryType;
   priority: Priority;
   source: LeadSource;
   status: LeadStatus;
-  exportQuota?: number;
-  plotSize?: number;
+  export_quota?: number;
+  plot_size?: number;
   email?: string;
   phone?: string;
   notes?: string;
-  outlookEmailId?: string;
-  createdAt: string;
-  updatedAt: string;
+  outlook_email_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OutlookEmail {
   id: string;
   subject: string;
-  senderName: string;
-  senderEmail: string;
-  receivedAt: string;
+  sender_name: string;
+  sender_email: string;
+  received_at: string;
   body: string;
   read: boolean;
-  hasAttachments: boolean;
-  isEnquiry: boolean;
-  associatedLeadId?: string;
+  has_attachments: boolean;
+  is_enquiry: boolean;
+  associated_lead_id?: string;
 }
 
 export type Language = "en" | "ru" | "tr" | "az";
