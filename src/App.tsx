@@ -34,23 +34,14 @@ function App() {
           <OutlookCallbackHandler />
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Routes>
-                      <Route index element={<Index />} />
-                      <Route path="leads" element={<Leads />} />
-                      <Route path="tasks" element={<Tasks />} />
-                      <Route path="meetings" element={<Meetings />} />
-                      <Route path="enquiries" element={<Enquiries />} />
-                      <Route path="settings" element={<Settings />} />
-                    </Routes>
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<Index />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="meetings" element={<Meetings />} />
+              <Route path="enquiries" element={<Enquiries />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
