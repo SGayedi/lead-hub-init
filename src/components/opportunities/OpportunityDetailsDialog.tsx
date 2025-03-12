@@ -69,24 +69,23 @@ export function OpportunityDetailsDialog({
           <TabsContent value="details" className="space-y-4 mt-4">
             <OpportunityDetailsTab 
               opportunity={opportunity}
-              onUpdated={onOpportunityUpdated}
             />
           </TabsContent>
 
           <TabsContent value="nda" className="mt-4">
-            <OpportunityNdaTab opportunityId={opportunity.id} />
+            <OpportunityNdaTab opportunity={opportunity} />
           </TabsContent>
 
           <TabsContent value="business-plan" className="mt-4">
-            <OpportunityBusinessPlanTab opportunityId={opportunity.id} />
+            <OpportunityBusinessPlanTab opportunity={opportunity} />
           </TabsContent>
 
           <TabsContent value="checklist" className="mt-4">
-            <OpportunityChecklistTab opportunityId={opportunity.id} />
+            <OpportunityChecklistTab opportunity={opportunity} />
           </TabsContent>
 
           <TabsContent value="documents" className="mt-4">
-            <OpportunityDocumentsTab opportunityId={opportunity.id} />
+            <OpportunityDocumentsTab opportunity={opportunity} />
           </TabsContent>
 
           <TabsContent value="comments" className="mt-4">

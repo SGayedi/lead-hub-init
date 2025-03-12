@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 interface TaskCreationFormProps {
   onSuccess?: () => void;
   relatedEntityId?: string;
-  relatedEntityType?: "lead" | "meeting";
+  relatedEntityType?: "lead" | "meeting" | "opportunity";
 }
 
 export function TaskCreationForm({ 

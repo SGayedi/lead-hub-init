@@ -12,7 +12,7 @@ import { Task } from "@/types/crm";
 
 interface RelatedTasksProps {
   entityId: string;
-  entityType: "lead" | "meeting";
+  entityType: "lead" | "meeting" | "opportunity";
 }
 
 export function RelatedTasks({ entityId, entityType }: RelatedTasksProps) {

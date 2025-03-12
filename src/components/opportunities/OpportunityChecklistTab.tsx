@@ -1,201 +1,180 @@
 
-import React, { useState } from 'react';
-import { Opportunity, ChecklistItemStatus, DueDiligenceChecklistItem } from '@/types/crm';
-import { useDueDiligenceChecklists } from '@/hooks/useDueDiligenceChecklists';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Spinner } from '@/components/Spinner';
-import { getStatusStyle } from '@/lib/utils';
-import { format } from 'date-fns';
-import { CheckCircle2, CircleDashed, CircleDot, ClipboardList, Clock, User } from 'lucide-react';
+import { useState } from "react";
+import { format } from "date-fns";
+import { useDueDiligenceChecklists } from "@/hooks/useDueDiligenceChecklists";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Spinner } from "@/components/Spinner";
+import { CheckCircle, CircleEllipsis, Circle, Clock } from "lucide-react";
+import { getStatusStyle } from "@/lib/utils";
+import { ChecklistItemStatus, Opportunity } from "@/types/crm";
 
 interface OpportunityChecklistTabProps {
   opportunity: Opportunity;
 }
 
 export function OpportunityChecklistTab({ opportunity }: OpportunityChecklistTabProps) {
+  const [editingNotes, setEditingNotes] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+  
   const { 
-    checklists, 
+    checklist, 
     checklistItems, 
-    isLoading,
+    isLoading, 
     updateChecklistItemStatus,
-    updateChecklistItemNotes
+    updateChecklistItemNotes,
+    assignChecklistItem
   } = useDueDiligenceChecklists(opportunity.id);
   
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
-  const [editingNotes, setEditingNotes] = useState(false);
-  
-  const handleStatusChange = async (itemId: string, status: ChecklistItemStatus) => {
-    await updateChecklistItemStatus.mutateAsync({ itemId, status });
+  const handleSaveNotes = async (itemId: string) => {
+    if (editingNotes === itemId) {
+      await updateChecklistItemNotes.mutateAsync({
+        itemId,
+        notes,
+        status: 'in_progress' as ChecklistItemStatus
+      });
+      setNotes("");
+      setEditingNotes(null);
+    }
   };
   
-  const handleSaveNotes = async () => {
-    if (!selectedItemId) return;
-    
-    await updateChecklistItemNotes.mutateAsync({ 
-      itemId: selectedItemId,
-      status: checklistItems.find(item => item.id === selectedItemId)?.status || 'not_started',
-      notes
-    });
-    
-    setEditingNotes(false);
-  };
-  
-  const getStatusIcon = (status: ChecklistItemStatus) => {
+  const renderStatusIcon = (status: ChecklistItemStatus) => {
     switch (status) {
-      case 'not_started':
-        return <CircleDashed className="h-5 w-5 text-muted-foreground" />;
-      case 'in_progress':
-        return <CircleDot className="h-5 w-5 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      case "not_started":
+        return <Circle className="h-5 w-5 text-gray-400" />;
+      case "in_progress":
+        return <CircleEllipsis className="h-5 w-5 text-blue-500" />;
+      case "completed":
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       default:
-        return <CircleDashed className="h-5 w-5 text-muted-foreground" />;
+        return <Circle className="h-5 w-5 text-gray-400" />;
+    }
+  };
+  
+  const getStatusBadge = (status: ChecklistItemStatus) => {
+    switch (status) {
+      case "not_started":
+        return <Badge variant="outline" className="bg-gray-100">Not Started</Badge>;
+      case "in_progress":
+        return <Badge variant="outline" className="bg-blue-100 text-blue-700">In Progress</Badge>;
+      case "completed":
+        return <Badge variant="outline" className="bg-green-100 text-green-700">Completed</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex justify-center py-8">
         <Spinner />
       </div>
     );
   }
   
-  if (!checklists.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No checklists found for this opportunity.</p>
-      </div>
-    );
-  }
-  
-  const checklist = checklists[0]; // Use the first checklist
-  
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{checklist.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {checklistItems.map((item) => (
-              <div 
-                key={item.id}
-                className={`p-4 hover:bg-muted transition-colors ${selectedItemId === item.id ? 'bg-muted' : ''}`}
-                onClick={() => {
-                  setSelectedItemId(item.id);
-                  setNotes(item.notes || '');
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(item.status)}
-                    <div>
-                      <h3 className="font-medium">{item.name}</h3>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                      )}
-                    </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+      </div>
+      
+      {checklistItems.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No checklist items available.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {checklistItems.map((item) => (
+            <div key={item.id} className="border rounded-md p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        const newStatus = 
+                          item.status === "not_started" ? "in_progress" : 
+                          item.status === "in_progress" ? "completed" : 
+                          "not_started";
+                        
+                        updateChecklistItemStatus.mutate({
+                          itemId: item.id,
+                          status: newStatus as ChecklistItemStatus
+                        });
+                      }}
+                    >
+                      {renderStatusIcon(item.status as ChecklistItemStatus)}
+                    </Button>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant={item.status === 'not_started' ? 'outline' : 'ghost'}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(item.id, 'not_started');
-                      }}
-                    >
-                      Not Started
-                    </Button>
-                    <Button
-                      variant={item.status === 'in_progress' ? 'outline' : 'ghost'}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(item.id, 'in_progress');
-                      }}
-                    >
-                      In Progress
-                    </Button>
-                    <Button
-                      variant={item.status === 'completed' ? 'outline' : 'ghost'}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(item.id, 'completed');
-                      }}
-                    >
-                      Completed
-                    </Button>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{item.name}</h4>
+                      {getStatusBadge(item.status as ChecklistItemStatus)}
+                    </div>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                    )}
+                    {item.notes && editingNotes !== item.id && (
+                      <div className="mt-2 text-sm border-l-2 border-blue-300 pl-2">
+                        {item.notes}
+                      </div>
+                    )}
+                    {item.due_date && (
+                      <div className="flex items-center mt-2 text-sm text-muted-foreground">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Due by {format(new Date(item.due_date), "PPP")}
+                      </div>
+                    )}
+                    {editingNotes === item.id && (
+                      <div className="mt-2">
+                        <Textarea
+                          className="text-sm min-h-[80px]"
+                          placeholder="Add notes..."
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                        />
+                        <div className="flex justify-end mt-2 space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setEditingNotes(null);
+                              setNotes("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveNotes(item.id)}
+                          >
+                            Save Notes
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {selectedItemId === item.id && (
-                  <div className="mt-4 pt-4 border-t">
-                    {item.assigned_to && (
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <User className="h-3 w-3 mr-1" />
-                        <span>Assigned to: {item.assigned_to}</span>
-                      </div>
-                    )}
-                    
-                    {item.due_date && (
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>Due: {format(new Date(item.due_date), 'PPp')}</span>
-                      </div>
-                    )}
-                    
-                    <div className="mt-2">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-sm font-medium">Notes</h4>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setEditingNotes(!editingNotes)}
-                        >
-                          {editingNotes ? 'Cancel' : 'Edit'}
-                        </Button>
-                      </div>
-                      
-                      {editingNotes ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            rows={4}
-                          />
-                          <div className="flex justify-end">
-                            <Button 
-                              size="sm"
-                              onClick={handleSaveNotes}
-                              disabled={updateChecklistItemNotes.isPending}
-                            >
-                              {updateChecklistItemNotes.isPending && <Spinner className="mr-2" />}
-                              Save Notes
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap">
-                          {item.notes || 'No notes provided.'}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                {editingNotes !== item.id && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingNotes(item.id);
+                      setNotes(item.notes || "");
+                    }}
+                  >
+                    Add Notes
+                  </Button>
                 )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
