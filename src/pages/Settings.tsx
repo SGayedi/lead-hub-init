@@ -14,38 +14,38 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [outlookConnected, setOutlookConnected] = useState(false);
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      checkOutlookConnection();
+      checkGmailConnection();
     }
   }, [user]);
 
-  const checkOutlookConnection = async () => {
+  const checkGmailConnection = async () => {
     if (!user) return;
     
     try {
       const { data, error } = await supabase
-        .from('outlook_tokens')
+        .from('gmail_tokens')
         .select('id')
         .eq('user_id', user.id)
         .single();
       
       if (data && !error) {
-        setOutlookConnected(true);
+        setGmailConnected(true);
       }
     } catch (error) {
-      console.error("Error checking Outlook connection:", error);
+      console.error("Error checking Gmail connection:", error);
     }
   };
 
-  const handleOutlookConnect = async () => {
+  const handleGmailConnect = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to connect your Outlook account.",
+        description: "Please log in to connect your Gmail account.",
       });
       return;
     }
@@ -53,7 +53,7 @@ export default function Settings() {
     setIsLoading(true);
     
     try {
-      const response = await supabase.functions.invoke('microsoft-auth', {
+      const response = await supabase.functions.invoke('gmail-auth', {
         method: 'POST',
         body: { path: 'authorize' },
       });
@@ -62,7 +62,7 @@ export default function Settings() {
         if (response.error.message.includes('OAuth configuration is incomplete')) {
           toast({
             title: "Setup Required",
-            description: "Microsoft OAuth credentials are not configured. Please contact your administrator.",
+            description: "Gmail OAuth credentials are not configured. Please contact your administrator.",
             variant: "destructive",
           });
         } else {
@@ -74,10 +74,10 @@ export default function Settings() {
         throw new Error("Failed to get authorization URL");
       }
     } catch (error) {
-      console.error("Error connecting to Outlook:", error);
+      console.error("Error connecting to Gmail:", error);
       toast({
         title: "Connection Error",
-        description: "Failed to connect to Outlook. Please try again.",
+        description: "Failed to connect to Gmail. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -85,48 +85,48 @@ export default function Settings() {
     }
   };
 
-  const handleOutlookDisconnect = async () => {
+  const handleGmailDisconnect = async () => {
     if (!user) return;
     
     setIsLoading(true);
     
     try {
       const { error } = await supabase
-        .from('outlook_tokens')
+        .from('gmail_tokens')
         .delete()
         .eq('user_id', user.id);
       
       if (error) throw error;
       
-      setOutlookConnected(false);
+      setGmailConnected(false);
       
       toast({
         title: "Disconnected",
-        description: "Your Outlook account has been disconnected.",
+        description: "Your Gmail account has been disconnected.",
       });
     } catch (error) {
-      console.error("Error disconnecting Outlook:", error);
+      console.error("Error disconnecting Gmail:", error);
       toast({
         title: "Error",
-        description: "Failed to disconnect your Outlook account. Please try again.",
+        description: "Failed to disconnect your Gmail account. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const syncOutlookEmails = async () => {
+  const syncGmailEmails = async () => {
     if (!user) return;
     
     setIsLoading(true);
     
     toast({
       title: "Syncing Emails",
-      description: "Synchronizing with your Outlook account...",
+      description: "Synchronizing with your Gmail account...",
     });
     
     try {
-      const response = await supabase.functions.invoke('microsoft-auth', {
+      const response = await supabase.functions.invoke('gmail-auth', {
         method: 'POST',
         body: { path: 'sync-emails' },
       });
@@ -143,7 +143,7 @@ export default function Settings() {
       console.error("Error syncing emails:", error);
       toast({
         title: "Sync Failed",
-        description: "Failed to sync emails from Outlook. Please try again.",
+        description: "Failed to sync emails from Gmail. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -226,7 +226,7 @@ export default function Settings() {
                   <div>
                     <p className="font-medium">New Enquiry Alerts</p>
                     <p className="text-sm text-muted-foreground">
-                      Be alerted when new enquiries are received from Outlook.
+                      Be alerted when new enquiries are received from Gmail.
                     </p>
                   </div>
                   <Switch defaultChecked />
@@ -241,12 +241,12 @@ export default function Settings() {
             <CardContent className="pt-6">
               <div className="grid gap-6 max-w-xl">
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Microsoft Outlook Integration</h3>
+                  <h3 className="text-lg font-medium mb-2">Gmail Integration</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Connect your Outlook account to sync emails and create leads from your inbox.
+                    Connect your Gmail account to sync emails and create leads from your inbox.
                   </p>
                   
-                  {outlookConnected ? (
+                  {gmailConnected ? (
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center">
                         <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3">
@@ -257,14 +257,14 @@ export default function Settings() {
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
-                          onClick={syncOutlookEmails}
+                          onClick={syncGmailEmails}
                           disabled={isLoading}
                         >
                           Sync Emails
                         </Button>
                         <Button 
                           variant="destructive" 
-                          onClick={handleOutlookDisconnect}
+                          onClick={handleGmailDisconnect}
                           disabled={isLoading}
                         >
                           Disconnect
@@ -272,9 +272,9 @@ export default function Settings() {
                       </div>
                     </div>
                   ) : (
-                    <Button onClick={handleOutlookConnect} disabled={isLoading}>
+                    <Button onClick={handleGmailConnect} disabled={isLoading}>
                       <Mail className="mr-2 h-4 w-4" />
-                      Connect Outlook
+                      Connect Gmail
                     </Button>
                   )}
                 </div>
@@ -289,7 +289,7 @@ export default function Settings() {
                           Automatically sync new emails from your connected account
                         </p>
                       </div>
-                      <Switch defaultChecked disabled={!outlookConnected} />
+                      <Switch defaultChecked disabled={!gmailConnected} />
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
@@ -298,7 +298,7 @@ export default function Settings() {
                           Automatically create enquiries from new emails
                         </p>
                       </div>
-                      <Switch disabled={!outlookConnected} />
+                      <Switch disabled={!gmailConnected} />
                     </div>
                   </div>
                 </div>

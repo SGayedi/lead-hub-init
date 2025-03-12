@@ -10,7 +10,7 @@ export function useOutlookAuth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleOutlookCallback = async () => {
+    const handleGmailCallback = async () => {
       // Check if URL contains parameters from the OAuth callback
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
@@ -26,7 +26,7 @@ export function useOutlookAuth() {
         console.error("OAuth error:", error);
         toast({
           title: "Authentication Failed",
-          description: "Failed to connect your Outlook account. Please try again.",
+          description: "Failed to connect your Gmail account. Please try again.",
         });
         return;
       }
@@ -34,11 +34,11 @@ export function useOutlookAuth() {
       if (code && state) {
         toast({
           title: "Authenticating",
-          description: "Completing Outlook authentication...",
+          description: "Completing Gmail authentication...",
         });
         
         try {
-          const response = await supabase.functions.invoke('microsoft-auth', {
+          const response = await supabase.functions.invoke('gmail-auth', {
             method: 'POST',
             body: { 
               path: 'callback',
@@ -53,7 +53,7 @@ export function useOutlookAuth() {
           
           toast({
             title: "Success",
-            description: "Your Outlook account has been connected!",
+            description: "Your Gmail account has been connected!",
           });
           
           // Redirect to settings page
@@ -62,12 +62,12 @@ export function useOutlookAuth() {
           console.error("Error in callback processing:", error);
           toast({
             title: "Connection Error",
-            description: "Failed to complete Outlook integration. Please try again.",
+            description: "Failed to complete Gmail integration. Please try again.",
           });
         }
       }
     };
     
-    handleOutlookCallback();
+    handleGmailCallback();
   }, [location.search]);
 }
