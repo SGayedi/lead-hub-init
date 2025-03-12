@@ -82,7 +82,7 @@ export function LeadDetailsDialog({ lead, isOpen, onClose }: LeadDetailsDialogPr
               {lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1)} Priority
             </Badge>
             <Badge variant="outline">
-              {lead.inquiryType === "company" ? "Company" : "Individual"}
+              {lead.inquiry_type === "company" ? "Company" : "Individual"}
             </Badge>
           </DialogDescription>
         </DialogHeader>
@@ -111,11 +111,11 @@ export function LeadDetailsDialog({ lead, isOpen, onClose }: LeadDetailsDialogPr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm text-muted-foreground">Created</h3>
-                <p>{formatDate(lead.createdAt)}</p>
+                <p>{formatDate(lead.created_at)}</p>
               </div>
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm text-muted-foreground">Updated</h3>
-                <p>{formatDate(lead.updatedAt)}</p>
+                <p>{formatDate(lead.updated_at)}</p>
               </div>
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm text-muted-foreground">Source</h3>
@@ -129,16 +129,16 @@ export function LeadDetailsDialog({ lead, isOpen, onClose }: LeadDetailsDialogPr
                 <h3 className="font-semibold text-sm text-muted-foreground">Phone</h3>
                 <p>{lead.phone || "-"}</p>
               </div>
-              {lead.exportQuota && (
+              {lead.export_quota && (
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm text-muted-foreground">Export Quota</h3>
-                  <p>{lead.exportQuota}</p>
+                  <p>{lead.export_quota}</p>
                 </div>
               )}
-              {lead.plotSize && (
+              {lead.plot_size && (
                 <div className="space-y-2">
                   <h3 className="font-semibold text-sm text-muted-foreground">Plot Size</h3>
-                  <p>{lead.plotSize}</p>
+                  <p>{lead.plot_size}</p>
                 </div>
               )}
             </div>

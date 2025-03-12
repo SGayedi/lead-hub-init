@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PlusCircle, Search, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -154,7 +153,7 @@ export default function Leads() {
                       </button>
                     </TableCell>
                     <TableCell>
-                      {lead.inquiryType === 'company' ? 'Company' : 'Individual'}
+                      {lead.inquiry_type === 'company' ? 'Company' : 'Individual'}
                     </TableCell>
                     <TableCell>
                       <Badge 
@@ -177,7 +176,7 @@ export default function Leads() {
                     </TableCell>
                     <TableCell>{lead.email || '-'}</TableCell>
                     <TableCell>
-                      {new Date(lead.createdAt).toLocaleDateString()}
+                      {new Date(lead.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">

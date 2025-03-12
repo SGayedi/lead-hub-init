@@ -8,18 +8,18 @@ import { Lead, LeadStatus } from '@/types/crm';
 const convertDbLeadToLead = (dbLead: any): Lead => ({
   id: dbLead.id,
   name: dbLead.name,
-  inquiryType: dbLead.inquiry_type,
+  inquiry_type: dbLead.inquiry_type,
   priority: dbLead.priority,
   source: dbLead.source,
   status: dbLead.status,
-  exportQuota: dbLead.export_quota,
-  plotSize: dbLead.plot_size,
+  export_quota: dbLead.export_quota,
+  plot_size: dbLead.plot_size,
   email: dbLead.email,
   phone: dbLead.phone,
   notes: dbLead.notes,
-  outlookEmailId: dbLead.outlook_email_id,
-  createdAt: dbLead.created_at,
-  updatedAt: dbLead.updated_at
+  outlook_email_id: dbLead.outlook_email_id,
+  created_at: dbLead.created_at,
+  updated_at: dbLead.updated_at
 });
 
 export function useLeads(status: LeadStatus | 'all' = 'all') {

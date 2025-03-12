@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,6 @@ export default function Enquiries() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Fetch emails on initial load
   useEffect(() => {
     if (user) {
       fetchEmails();
@@ -79,7 +77,6 @@ export default function Enquiries() {
         description: "The email has been marked as an enquiry."
       });
 
-      // Look for matching leads based on email domain
       const email = emails.find(e => e.id === emailId);
       if (email) {
         await findMatchingLeads(email);
@@ -95,10 +92,8 @@ export default function Enquiries() {
 
   const findMatchingLeads = async (email: OutlookEmail) => {
     try {
-      // Get domain from email
       const domain = email.sender_email.split('@')[1];
       
-      // Look for leads with matching email domain or similar name
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -139,7 +134,6 @@ export default function Enquiries() {
       
       if (error) throw error;
       
-      // Update local state
       setEmails(prev => 
         prev.map(email => 
           email.id === selectedEmail.id 
@@ -189,7 +183,6 @@ export default function Enquiries() {
         description: `Successfully synced ${response.data?.count || 0} emails.`,
       });
       
-      // Refresh emails list
       fetchEmails();
     } catch (error) {
       console.error("Error syncing emails:", error);
@@ -385,32 +378,30 @@ export default function Enquiries() {
                                 notes: selectedEmail?.body || "",
                                 source: "outlook",
                               }}
-                              onSuccess={async (leadId) => {
+                              onSuccess={(leadId: string) => {
                                 setSelectedEmail(null);
                                 setShowLeadCreation(false);
                                 
-                                // Connect the email to the new lead
                                 if (selectedEmail) {
-                                  try {
-                                    await supabase
-                                      .from('outlook_emails')
-                                      .update({ 
-                                        associated_lead_id: leadId,
-                                        is_enquiry: true 
-                                      })
-                                      .eq('id', selectedEmail.id);
-                                    
-                                    // Update local state
-                                    setEmails(prev => 
-                                      prev.map(email => 
-                                        email.id === selectedEmail.id 
-                                          ? { ...email, associated_lead_id: leadId, is_enquiry: true } 
-                                          : email
-                                      )
-                                    );
-                                  } catch (error) {
-                                    console.error("Error connecting email to new lead:", error);
-                                  }
+                                  supabase
+                                    .from('outlook_emails')
+                                    .update({ 
+                                      associated_lead_id: leadId,
+                                      is_enquiry: true 
+                                    })
+                                    .eq('id', selectedEmail.id)
+                                    .then(() => {
+                                      setEmails(prev => 
+                                        prev.map(email => 
+                                          email.id === selectedEmail.id 
+                                            ? { ...email, associated_lead_id: leadId, is_enquiry: true } 
+                                            : email
+                                        )
+                                      );
+                                    })
+                                    .catch(error => {
+                                      console.error("Error connecting email to new lead:", error);
+                                    });
                                 }
                               }}
                             />

@@ -38,17 +38,19 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Layout />
+                  <Layout>
+                    <Routes>
+                      <Route index element={<Index />} />
+                      <Route path="leads" element={<Leads />} />
+                      <Route path="tasks" element={<Tasks />} />
+                      <Route path="meetings" element={<Meetings />} />
+                      <Route path="enquiries" element={<Enquiries />} />
+                      <Route path="settings" element={<Settings />} />
+                    </Routes>
+                  </Layout>
                 </ProtectedRoute>
               }
-            >
-              <Route index element={<Index />} />
-              <Route path="leads" element={<Leads />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="meetings" element={<Meetings />} />
-              <Route path="enquiries" element={<Enquiries />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
