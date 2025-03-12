@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { PlusCircle, Search, CheckCircle, XCircle, Clock } from "lucide-react";
+import { PlusCircle, Search, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -24,11 +24,13 @@ import { LeadCreationForm } from "@/components/LeadCreationForm";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Lead, LeadStatus } from "@/types/crm";
 import { toast } from "sonner";
+import { LeadDetailsDialog } from "@/components/LeadDetailsDialog";
 
 export default function Leads() {
   const [filterStatus, setFilterStatus] = useState<LeadStatus | 'all'>('all');
   const { leads, isLoading, searchTerm, setSearchTerm } = useLeads(filterStatus);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -59,6 +61,10 @@ export default function Leads() {
       case 'rejected': return 'Rejected';
       default: return status;
     }
+  };
+
+  const viewLeadDetails = (lead: Lead) => {
+    setSelectedLead(lead);
   };
   
   return (
@@ -139,7 +145,14 @@ export default function Leads() {
               ) : (
                 leads.map((lead) => (
                   <TableRow key={lead.id}>
-                    <TableCell className="font-medium">{lead.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <button 
+                        className="text-left hover:underline focus:outline-none focus:underline"
+                        onClick={() => viewLeadDetails(lead)}
+                      >
+                        {lead.name}
+                      </button>
+                    </TableCell>
                     <TableCell>
                       {lead.inquiryType === 'company' ? 'Company' : 'Individual'}
                     </TableCell>
@@ -168,6 +181,16 @@ export default function Leads() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => viewLeadDetails(lead)}
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
                         {lead.status === 'waiting_for_approval' && (
                           <>
                             <Button 
@@ -217,6 +240,12 @@ export default function Leads() {
           <LeadCreationForm onSuccess={() => setShowCreateDialog(false)} />
         </DialogContent>
       </Dialog>
+
+      <LeadDetailsDialog 
+        lead={selectedLead}
+        isOpen={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
+      />
     </div>
   );
 }
