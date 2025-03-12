@@ -1,45 +1,81 @@
 
 import { useState } from "react";
-import { PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { TaskCreationForm } from "@/components/TaskCreationForm";
-import { RelatedTasks } from "@/components/RelatedTasks";
 import { Opportunity } from "@/types/crm";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useTasks } from "@/hooks/useTasks";
+import { Spinner } from "@/components/Spinner";
+import { TaskCard } from "@/components/TaskCard";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { TaskCreationForm } from "@/components/TaskCreationForm";
 
-interface OpportunityTasksTabProps {
+export interface OpportunityTasksTabProps {
   opportunity: Opportunity;
 }
 
 export function OpportunityTasksTab({ opportunity }: OpportunityTasksTabProps) {
-  const [showTaskForm, setShowTaskForm] = useState(false);
-
+  const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
+  
+  const { 
+    tasks, 
+    isLoading, 
+    error 
+  } = useTasks({
+    relatedEntityId: opportunity.id,
+    relatedEntityType: "opportunity"
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Spinner />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="text-center py-8 text-destructive">
+        Error loading tasks: {error.message}
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Tasks</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setShowTaskForm(true)}
-          className="flex items-center gap-1"
-        >
-          <PlusCircle className="h-4 w-4" />
-          New Task
-        </Button>
+        <h3 className="text-lg font-medium">Tasks</h3>
+        <Dialog open={showNewTaskDialog} onOpenChange={setShowNewTaskDialog}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Task
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <TaskCreationForm 
+              relatedEntityId={opportunity.id}
+              relatedEntityType="opportunity"
+              onSuccess={() => setShowNewTaskDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {showTaskForm && (
-        <div className="border p-4 rounded-md bg-muted/50 mb-4">
-          <h4 className="font-medium mb-2">Create Task for Opportunity</h4>
-          <TaskCreationForm 
-            onSuccess={() => setShowTaskForm(false)}
-            relatedEntityId={opportunity.id}
-            relatedEntityType="opportunity"
-          />
+      
+      {tasks.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground">
+          No tasks created yet
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+            />
+          ))}
         </div>
       )}
-
-      <RelatedTasks entityId={opportunity.id} entityType="opportunity" />
     </div>
   );
 }

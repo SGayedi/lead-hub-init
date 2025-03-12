@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { UploadCloud, FileText, Trash2, Download, Eye, History, ArrowUpCircle } from 'lucide-react';
@@ -93,7 +94,8 @@ export function DocumentUploader({
           existingDocumentId: versionDocument?.id
         });
         
-        if (onDocumentUploaded && result?.id) {
+        // Only call onDocumentUploaded if the function exists and we have a result with an id
+        if (onDocumentUploaded && result && typeof result === 'object' && 'id' in result) {
           onDocumentUploaded(result.id);
         }
       }

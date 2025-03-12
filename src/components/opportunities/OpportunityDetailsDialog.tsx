@@ -14,6 +14,17 @@ interface OpportunityDetailsDialogProps {
   onClose: () => void;
 }
 
+// Create interface for the DialogHeader to match what we're passing
+interface OpportunityDialogHeaderProps {
+  opportunity: Opportunity;
+  onClose: () => void;
+}
+
+// Create interface for the TasksTab to match what we're passing
+interface OpportunityTasksTabProps {
+  opportunity: Opportunity;
+}
+
 export function OpportunityDetailsDialog({ 
   opportunity, 
   onClose 
@@ -69,7 +80,7 @@ export function OpportunityDetailsDialog({
           </TabsContent>
           
           <TabsContent value="tasks" className="mt-0">
-            <OpportunityTasksTab opportunityId={opportunity.id} />
+            <OpportunityTasksTab opportunity={opportunity} />
           </TabsContent>
         </div>
       </Tabs>
