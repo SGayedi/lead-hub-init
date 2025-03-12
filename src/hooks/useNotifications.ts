@@ -13,7 +13,7 @@ const convertDbNotificationToNotification = (dbNotification: any): Notification 
   title: dbNotification.title,
   content: dbNotification.message || dbNotification.content,
   type: dbNotification.type,
-  isRead: dbNotification.read || dbNotification.is_read,
+  isRead: dbNotification.is_read,
   relatedEntityId: dbNotification.related_entity_id,
   relatedEntityType: dbNotification.related_entity_type,
   createdAt: dbNotification.created_at,

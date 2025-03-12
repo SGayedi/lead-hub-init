@@ -266,8 +266,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_read: boolean
           message: string
-          read: boolean
           related_entity_id: string | null
           related_entity_type: string | null
           title: string
@@ -278,8 +278,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_read?: boolean
           message: string
-          read?: boolean
           related_entity_id?: string | null
           related_entity_type?: string | null
           title: string
@@ -290,8 +290,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_read?: boolean
           message?: string
-          read?: boolean
           related_entity_id?: string | null
           related_entity_type?: string | null
           title?: string
