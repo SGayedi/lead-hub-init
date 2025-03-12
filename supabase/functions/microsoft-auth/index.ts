@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -9,10 +8,19 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID")!;
-const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET")!;
-// Use a default redirect URI if not provided or not valid
+
+// Get environment variables with validation
+const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID");
+const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET");
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
+
+// Validate required environment variables
+if (!MS_CLIENT_ID) {
+  console.error("Missing MS_CLIENT_ID environment variable");
+}
+if (!MS_CLIENT_SECRET) {
+  console.error("Missing MS_CLIENT_SECRET environment variable");
+}
 
 // Validate redirect URI - it must be a valid absolute URL
 try {
@@ -25,6 +33,7 @@ try {
 }
 
 console.log("Using REDIRECT_URI:", REDIRECT_URI);
+console.log("Using MS_CLIENT_ID:", MS_CLIENT_ID ? "Present" : "Missing");
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -33,6 +42,20 @@ serve(async (req) => {
   }
 
   try {
+    // Validate required environment variables
+    if (!MS_CLIENT_ID || !MS_CLIENT_SECRET) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Microsoft OAuth configuration is incomplete', 
+          details: 'Missing client ID or secret' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -58,7 +81,6 @@ serve(async (req) => {
     const body = await req.json();
     const { path } = body;
 
-    // Handle different paths
     switch (path) {
       case 'authorize': {
         console.log('Handling authorize request');
