@@ -1,64 +1,58 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./hooks/useAuth";
+import { Toaster } from "./components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
-import { AuthProvider } from "@/hooks/useAuth";
-import './App.css';
-
-// Pages
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
+import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
-import Enquiries from "./pages/Enquiries";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
 import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
+import Settings from "./pages/Settings";
+import Enquiries from "./pages/Enquiries";
+import NotFound from "./pages/NotFound";
+import { useOutlookAuth } from "./hooks/useOutlookAuth";
+import { Toaster as SonnerToaster } from "sonner";
+import "./App.css";
 
-// Components
-import { Layout } from "./components/Layout";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-
-// Create a QueryClient instance for React Query
+// Create a client
 const queryClient = new QueryClient();
+
+// OAuth callback handler component
+function OutlookCallbackHandler() {
+  useOutlookAuth();
+  return null;
+}
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
+          <OutlookCallbackHandler />
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            
-            <Route path="/" element={<Layout><Index /></Layout>} />
-            <Route path="/leads" element={
-              <ProtectedRoute>
-                <Layout><Leads /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/enquiries" element={
-              <ProtectedRoute>
-                <Layout><Enquiries /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/tasks" element={
-              <ProtectedRoute>
-                <Layout><Tasks /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/meetings" element={
-              <ProtectedRoute>
-                <Layout><Meetings /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Layout><Settings /></Layout>
-              </ProtectedRoute>
-            } />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Index />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="meetings" element={<Meetings />} />
+              <Route path="enquiries" element={<Enquiries />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <Toaster position="top-right" />
+          <Toaster />
+          <SonnerToaster position="top-right" />
         </AuthProvider>
       </Router>
     </QueryClientProvider>

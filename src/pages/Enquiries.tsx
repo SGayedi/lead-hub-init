@@ -1,181 +1,217 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { OutlookEmail, Lead } from "@/types/crm";
-import { Search, Mail, ArrowRight, Flag, CheckCircle, AlertCircle } from "lucide-react";
+import { Search, Mail, ArrowRight, Flag, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { LeadCreationForm } from "@/components/LeadCreationForm";
-
-// Mock data for demonstration
-const mockEmails: OutlookEmail[] = [
-  {
-    id: "1",
-    subject: "Investment Opportunity Discussion",
-    senderName: "John Smith",
-    senderEmail: "john.smith@example.com",
-    receivedAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    body: "Hello, I'm interested in discussing potential investment opportunities in your development projects. Our company is looking to invest in real estate with export quotas above 80%. Please let me know if we can arrange a meeting to discuss further details.",
-    read: true,
-    hasAttachments: false,
-    isEnquiry: false,
-  },
-  {
-    id: "2",
-    subject: "Plot Size Inquiry",
-    senderName: "Maria Rodriguez",
-    senderEmail: "maria@company.co",
-    receivedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    body: "I'm writing to inquire about available plots in your development areas. We are particularly interested in sizes larger than 1.5 hectares. Could you send me information about what's currently available?",
-    read: false,
-    hasAttachments: true,
-    isEnquiry: true,
-  },
-  {
-    id: "3",
-    subject: "Legal Services Requirements",
-    senderName: "Alex Johnson",
-    senderEmail: "alex.johnson@legalfirm.com",
-    receivedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    body: "Our legal firm would like to offer our services for your development projects. We specialize in real estate and investment law and have extensive experience with international clients.",
-    read: true,
-    hasAttachments: false,
-    isEnquiry: true,
-  }
-];
-
-// Mock existing leads for matching
-const mockExistingLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Acme Corp",
-    inquiryType: "company",
-    priority: "high",
-    source: "referral",
-    status: "active",
-    exportQuota: 80,
-    plotSize: 2,
-    email: "info@acme.com",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    name: "Legal Services LLC",
-    inquiryType: "company",
-    priority: "medium",
-    source: "direct",
-    status: "active",
-    email: "contact@legalservices.com",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Enquiries() {
   const { toast } = useToast();
-  const [emails, setEmails] = useState<OutlookEmail[]>(mockEmails);
+  const { user } = useAuth();
+  const [emails, setEmails] = useState<OutlookEmail[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEmail, setSelectedEmail] = useState<OutlookEmail | null>(null);
   const [matchingLeads, setMatchingLeads] = useState<Lead[]>([]);
   const [showLeadCreation, setShowLeadCreation] = useState(false);
   const [filter, setFilter] = useState<'all' | 'enquiries' | 'unread'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const handleMarkAsEnquiry = (emailId: string) => {
-    setEmails(prev => 
-      prev.map(email => 
-        email.id === emailId 
-          ? { ...email, isEnquiry: true } 
-          : email
-      )
-    );
-    
-    toast({
-      title: "Marked as Enquiry",
-      description: "The email has been marked as an enquiry."
-    });
+  // Fetch emails on initial load
+  useEffect(() => {
+    if (user) {
+      fetchEmails();
+    }
+  }, [user]);
 
-    // Simulate finding matching leads
-    if (emailId === "1") {
-      setMatchingLeads([mockExistingLeads[0]]);
-    } else if (emailId === "3") {
-      setMatchingLeads([mockExistingLeads[1]]);
-    } else {
-      setMatchingLeads([]);
+  const fetchEmails = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('outlook_emails')
+        .select('*')
+        .order('received_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setEmails(data as OutlookEmail[]);
+      }
+    } catch (error) {
+      console.error("Error fetching emails:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load emails. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleConvertToLead = (email: OutlookEmail) => {
-    setSelectedEmail(email);
-    
-    // Check for matching leads based on email domain or name
-    const potentialMatches = mockExistingLeads.filter(lead => 
-      lead.email?.includes(email.senderEmail.split('@')[1]) || 
-      lead.name.toLowerCase().includes(email.senderName.toLowerCase())
-    );
-    
-    setMatchingLeads(potentialMatches);
-    
-    if (potentialMatches.length > 0) {
+  const handleMarkAsEnquiry = async (emailId: string) => {
+    try {
+      const { error } = await supabase
+        .from('outlook_emails')
+        .update({ is_enquiry: true })
+        .eq('id', emailId);
+      
+      if (error) throw error;
+      
+      setEmails(prev => 
+        prev.map(email => 
+          email.id === emailId 
+            ? { ...email, is_enquiry: true } 
+            : email
+        )
+      );
+      
       toast({
-        title: "Potential Matches Found",
-        description: "We found existing leads that might match this enquiry."
+        title: "Marked as Enquiry",
+        description: "The email has been marked as an enquiry."
       });
-    } else {
+
+      // Look for matching leads based on email domain
+      const email = emails.find(e => e.id === emailId);
+      if (email) {
+        await findMatchingLeads(email);
+      }
+    } catch (error) {
+      console.error("Error marking as enquiry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark email as enquiry. Please try again.",
+      });
+    }
+  };
+
+  const findMatchingLeads = async (email: OutlookEmail) => {
+    try {
+      // Get domain from email
+      const domain = email.sender_email.split('@')[1];
+      
+      // Look for leads with matching email domain or similar name
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or(`email.ilike.%${domain}%,name.ilike.%${email.sender_name.split(' ')[0]}%`);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setMatchingLeads(data as Lead[]);
+      } else {
+        setMatchingLeads([]);
+      }
+    } catch (error) {
+      console.error("Error finding matching leads:", error);
+    }
+  };
+
+  const handleConvertToLead = async (email: OutlookEmail) => {
+    setSelectedEmail(email);
+    await findMatchingLeads(email);
+    
+    if (matchingLeads.length === 0) {
       setShowLeadCreation(true);
     }
   };
 
-  const handleConnectToExistingLead = (leadId: string) => {
+  const handleConnectToExistingLead = async (leadId: string) => {
     if (!selectedEmail) return;
     
-    // In a real app, you would update the database here
-    toast({
-      title: "Enquiry Connected",
-      description: "This enquiry has been connected to an existing lead."
-    });
-    
-    // Update local state to reflect the connection
-    setEmails(prev => 
-      prev.map(email => 
-        email.id === selectedEmail.id 
-          ? { ...email, isEnquiry: true, associatedLeadId: leadId } 
-          : email
-      )
-    );
-    
-    setSelectedEmail(null);
-    setMatchingLeads([]);
+    try {
+      const { error } = await supabase
+        .from('outlook_emails')
+        .update({ 
+          associated_lead_id: leadId,
+          is_enquiry: true 
+        })
+        .eq('id', selectedEmail.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setEmails(prev => 
+        prev.map(email => 
+          email.id === selectedEmail.id 
+            ? { ...email, is_enquiry: true, associated_lead_id: leadId } 
+            : email
+        )
+      );
+      
+      toast({
+        title: "Enquiry Connected",
+        description: "This enquiry has been connected to an existing lead."
+      });
+      
+      setSelectedEmail(null);
+      setMatchingLeads([]);
+    } catch (error) {
+      console.error("Error connecting to lead:", error);
+      toast({
+        title: "Error",
+        description: "Failed to connect enquiry to lead. Please try again.",
+      });
+    }
   };
 
-  const syncOutlookEmails = () => {
+  const syncOutlookEmails = async () => {
+    if (!user) return;
+    
+    setIsSyncing(true);
+    
     toast({
       title: "Syncing Emails",
-      description: "Synchronizing with your Outlook account..."
+      description: "Synchronizing with your Outlook account...",
     });
     
-    // Simulate sync completion after a delay
-    setTimeout(() => {
+    try {
+      const response = await supabase.functions.invoke('microsoft-auth', {
+        method: 'POST',
+        body: { path: 'sync-emails' },
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
       toast({
         title: "Sync Complete",
-        description: "Your emails have been synchronized."
+        description: `Successfully synced ${response.data?.count || 0} emails.`,
       });
-    }, 1500);
+      
+      // Refresh emails list
+      fetchEmails();
+    } catch (error) {
+      console.error("Error syncing emails:", error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync emails from Outlook. Please try again.",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const filteredEmails = emails.filter(email => {
-    if (filter === 'enquiries' && !email.isEnquiry) return false;
+    if (filter === 'enquiries' && !email.is_enquiry) return false;
     if (filter === 'unread' && email.read) return false;
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
         email.subject.toLowerCase().includes(query) ||
-        email.senderName.toLowerCase().includes(query) ||
-        email.senderEmail.toLowerCase().includes(query) ||
+        email.sender_name.toLowerCase().includes(query) ||
+        email.sender_email.toLowerCase().includes(query) ||
         email.body.toLowerCase().includes(query)
       );
     }
@@ -187,8 +223,12 @@ export default function Enquiries() {
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Outlook Enquiries</h1>
-        <Button onClick={syncOutlookEmails}>
-          <Mail className="h-4 w-4 mr-2" />
+        <Button onClick={syncOutlookEmails} disabled={isSyncing}>
+          {isSyncing ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Mail className="h-4 w-4 mr-2" />
+          )}
           Sync Outlook
         </Button>
       </div>
@@ -216,11 +256,23 @@ export default function Enquiries() {
       </div>
       
       <div className="grid gap-4">
-        {filteredEmails.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <RefreshCw className="h-10 w-10 text-muted-foreground mb-4 animate-spin" />
+              <p className="text-muted-foreground">Loading emails...</p>
+            </CardContent>
+          </Card>
+        ) : filteredEmails.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-10">
               <Mail className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No emails found matching your criteria</p>
+              {emails.length === 0 && (
+                <Button onClick={syncOutlookEmails} variant="outline" className="mt-4">
+                  Sync emails from Outlook
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -230,18 +282,18 @@ export default function Enquiries() {
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-xl font-medium">
                     {email.subject}
-                    {email.isEnquiry && (
+                    {email.is_enquiry && (
                       <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                         Enquiry
                       </span>
                     )}
-                    {email.associatedLeadId && (
+                    {email.associated_lead_id && (
                       <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
                         Linked to Lead
                       </span>
                     )}
                   </CardTitle>
-                  {email.hasAttachments && (
+                  {email.has_attachments && (
                     <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
                       Attachment
                     </span>
@@ -251,17 +303,17 @@ export default function Enquiries() {
               <CardContent>
                 <div className="mb-3">
                   <p className="text-sm">
-                    <span className="font-medium">From:</span> {email.senderName} &lt;{email.senderEmail}&gt;
+                    <span className="font-medium">From:</span> {email.sender_name} &lt;{email.sender_email}&gt;
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(email.receivedAt).toLocaleString()}
+                    {new Date(email.received_at).toLocaleString()}
                   </p>
                 </div>
                 
                 <p className="text-sm line-clamp-3 mb-4">{email.body}</p>
                 
                 <div className="flex gap-2">
-                  {!email.isEnquiry ? (
+                  {!email.is_enquiry ? (
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -270,7 +322,7 @@ export default function Enquiries() {
                       <Flag className="h-4 w-4 mr-2" />
                       Mark as Enquiry
                     </Button>
-                  ) : !email.associatedLeadId ? (
+                  ) : !email.associated_lead_id ? (
                     <Sheet>
                       <SheetTrigger asChild>
                         <Button 
@@ -298,7 +350,7 @@ export default function Enquiries() {
                                     <div>
                                       <h4 className="font-medium">{lead.name}</h4>
                                       <p className="text-sm text-muted-foreground">
-                                        {lead.inquiryType} • {lead.priority} priority
+                                        {lead.inquiry_type} • {lead.priority} priority
                                       </p>
                                     </div>
                                     <Button 
@@ -328,24 +380,37 @@ export default function Enquiries() {
                           <div className="py-4">
                             <LeadCreationForm 
                               initialData={{
-                                name: selectedEmail?.senderName || "",
-                                email: selectedEmail?.senderEmail || "",
+                                name: selectedEmail?.sender_name || "",
+                                email: selectedEmail?.sender_email || "",
                                 notes: selectedEmail?.body || "",
                                 source: "outlook",
                               }}
-                              onSuccess={() => {
+                              onSuccess={async (leadId) => {
                                 setSelectedEmail(null);
                                 setShowLeadCreation(false);
                                 
-                                // Update the email to show it's connected to a lead
+                                // Connect the email to the new lead
                                 if (selectedEmail) {
-                                  setEmails(prev => 
-                                    prev.map(email => 
-                                      email.id === selectedEmail.id 
-                                        ? { ...email, associatedLeadId: "new-lead-id" } 
-                                        : email
-                                    )
-                                  );
+                                  try {
+                                    await supabase
+                                      .from('outlook_emails')
+                                      .update({ 
+                                        associated_lead_id: leadId,
+                                        is_enquiry: true 
+                                      })
+                                      .eq('id', selectedEmail.id);
+                                    
+                                    // Update local state
+                                    setEmails(prev => 
+                                      prev.map(email => 
+                                        email.id === selectedEmail.id 
+                                          ? { ...email, associated_lead_id: leadId, is_enquiry: true } 
+                                          : email
+                                      )
+                                    );
+                                  } catch (error) {
+                                    console.error("Error connecting email to new lead:", error);
+                                  }
                                 }
                               }}
                             />

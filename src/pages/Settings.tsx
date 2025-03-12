@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,34 +8,139 @@ import { Switch } from "@/components/ui/switch";
 import { LanguageSelect } from "@/components/LanguageSelect";
 import { Mail, Lock, Bell, HelpCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [outlookConnected, setOutlookConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleOutlookConnect = () => {
-    // This would be replaced with actual OAuth flow
-    toast({
-      title: "Outlook Integration",
-      description: "Connecting to Outlook... (Simulated for demo)",
-    });
+  useEffect(() => {
+    if (user) {
+      checkOutlookConnection();
+    }
+  }, [user]);
+
+  const checkOutlookConnection = async () => {
+    if (!user) return;
     
-    // Simulate successful connection
-    setTimeout(() => {
-      setOutlookConnected(true);
-      toast({
-        title: "Success!",
-        description: "Your Outlook account has been connected.",
-      });
-    }, 1500);
+    try {
+      const { data, error } = await supabase
+        .from('outlook_tokens')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data && !error) {
+        setOutlookConnected(true);
+      }
+    } catch (error) {
+      console.error("Error checking Outlook connection:", error);
+    }
   };
 
-  const handleOutlookDisconnect = () => {
-    setOutlookConnected(false);
+  const handleOutlookConnect = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to connect your Outlook account.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await supabase.functions.invoke('microsoft-auth', {
+        method: 'POST',
+        body: { path: 'authorize' },
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      if (response.data && response.data.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error("Failed to get authorization URL");
+      }
+    } catch (error) {
+      console.error("Error connecting to Outlook:", error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to Outlook. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOutlookDisconnect = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('outlook_tokens')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setOutlookConnected(false);
+      
+      toast({
+        title: "Disconnected",
+        description: "Your Outlook account has been disconnected.",
+      });
+    } catch (error) {
+      console.error("Error disconnecting Outlook:", error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect your Outlook account. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const syncOutlookEmails = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    
     toast({
-      title: "Disconnected",
-      description: "Your Outlook account has been disconnected.",
+      title: "Syncing Emails",
+      description: "Synchronizing with your Outlook account...",
     });
+    
+    try {
+      const response = await supabase.functions.invoke('microsoft-auth', {
+        method: 'POST',
+        body: { path: 'sync-emails' },
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      toast({
+        title: "Sync Complete",
+        description: `Successfully synced ${response.data?.count || 0} emails.`,
+      });
+    } catch (error) {
+      console.error("Error syncing emails:", error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync emails from Outlook. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -141,28 +245,27 @@ export default function Settings() {
                         <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mr-3">
                           Connected
                         </div>
-                        <span className="text-sm">your.email@outlook.com</span>
+                        <span className="text-sm">{user?.email}</span>
                       </div>
                       <div className="flex gap-2">
                         <Button 
                           variant="outline" 
-                          onClick={() => toast({
-                            title: "Sync Complete",
-                            description: "Your emails have been synchronized"
-                          })}
+                          onClick={syncOutlookEmails}
+                          disabled={isLoading}
                         >
                           Sync Emails
                         </Button>
                         <Button 
                           variant="destructive" 
                           onClick={handleOutlookDisconnect}
+                          disabled={isLoading}
                         >
                           Disconnect
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <Button onClick={handleOutlookConnect}>
+                    <Button onClick={handleOutlookConnect} disabled={isLoading}>
                       <Mail className="mr-2 h-4 w-4" />
                       Connect Outlook
                     </Button>
@@ -239,3 +342,4 @@ export default function Settings() {
     </div>
   );
 }
+
