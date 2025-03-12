@@ -34,6 +34,8 @@ interface TaskFilter {
   onlyCreatedByMe?: boolean;
   searchTerm?: string;
   onlyRelatedTo?: RelatedEntityFilter;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export function useTasks(filter: TaskFilter = {}) {
@@ -46,11 +48,13 @@ export function useTasks(filter: TaskFilter = {}) {
     priority, 
     onlyAssignedToMe = false, 
     onlyCreatedByMe = false,
-    onlyRelatedTo
+    onlyRelatedTo,
+    startDate,
+    endDate
   } = filter;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['tasks', status, priority, onlyAssignedToMe, onlyCreatedByMe, searchTerm, onlyRelatedTo, user?.id],
+    queryKey: ['tasks', status, priority, onlyAssignedToMe, onlyCreatedByMe, searchTerm, onlyRelatedTo, startDate, endDate, user?.id],
     queryFn: async () => {
       if (!user) return [];
       
@@ -79,6 +83,15 @@ export function useTasks(filter: TaskFilter = {}) {
       
       if (searchTerm) {
         query = query.ilike('title', `%${searchTerm}%`);
+      }
+      
+      // Filter by date range if provided
+      if (startDate) {
+        query = query.gte('due_date', startDate.toISOString());
+      }
+      
+      if (endDate) {
+        query = query.lte('due_date', endDate.toISOString());
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
