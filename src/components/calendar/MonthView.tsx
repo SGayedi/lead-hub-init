@@ -33,7 +33,7 @@ export function MonthView({
   });
 
   return (
-    <div className="grid grid-rows-[auto_1fr] gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card className="p-0 overflow-hidden">
         <CardContent className="p-0">
           <Calendar
