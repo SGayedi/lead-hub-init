@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/hooks/useAuth";
 import './App.css';
 
 // Pages
@@ -22,30 +23,32 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          
-          <Route path="/" element={<Layout><Index /></Layout>} />
-          <Route path="/leads" element={
-            <ProtectedRoute>
-              <Layout><Leads /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/enquiries" element={
-            <ProtectedRoute>
-              <Layout><Enquiries /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Layout><Settings /></Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-      <Toaster position="top-right" />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            
+            <Route path="/" element={<Layout><Index /></Layout>} />
+            <Route path="/leads" element={
+              <ProtectedRoute>
+                <Layout><Leads /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/enquiries" element={
+              <ProtectedRoute>
+                <Layout><Enquiries /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout><Settings /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+        <Toaster position="top-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
