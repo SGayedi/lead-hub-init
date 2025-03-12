@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,18 +11,81 @@ import { Mail, Lock, Bell, HelpCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [gmailConnected, setGmailConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     if (user) {
       checkGmailConnection();
     }
   }, [user]);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const searchParams = new URLSearchParams(location.search);
+      const code = searchParams.get('code');
+      const error = searchParams.get('error');
+      
+      // Clear URL parameters after processing
+      if ((code || error) && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      if (error) {
+        toast({
+          title: "Authentication Error",
+          description: `Failed to connect Gmail: ${error}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (code && !isLoading) {
+        setIsLoading(true);
+        try {
+          const response = await supabase.functions.invoke('gmail-auth', {
+            method: 'POST',
+            body: { 
+              path: 'callback',
+              code 
+            },
+          });
+          
+          if (response.error) {
+            throw new Error(response.error.message);
+          }
+          
+          setGmailConnected(true);
+          
+          toast({
+            title: "Gmail Connected",
+            description: "Your Gmail account has been successfully connected.",
+          });
+          
+          // Start syncing emails after connecting
+          syncGmailEmails();
+        } catch (error) {
+          console.error("Error in OAuth callback:", error);
+          toast({
+            title: "Connection Error",
+            description: "Failed to complete Gmail connection. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    handleOAuthCallback();
+  }, [location, toast]);
 
   const checkGmailConnection = async () => {
     if (!user) return;

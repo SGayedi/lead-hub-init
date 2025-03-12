@@ -358,6 +358,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_gmail_emails_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string

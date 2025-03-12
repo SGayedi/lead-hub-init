@@ -1,2 +1,7 @@
 
 project_id = "gfsawddappbypvndmzwc"
+
+[env]
+GMAIL_CLIENT_ID = "495221751115-2h3ia0mveuisnvp3vlblmsm2tlb7feh1.apps.googleusercontent.com"
+GMAIL_CLIENT_SECRET = "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"
+REDIRECT_URI = "http://localhost:5173/settings"
