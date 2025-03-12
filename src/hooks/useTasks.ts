@@ -22,12 +22,18 @@ const convertDbTaskToTask = (dbTask: any): Task => ({
   updatedAt: dbTask.updated_at
 });
 
+interface RelatedEntityFilter {
+  entityId: string;
+  entityType: "lead" | "meeting";
+}
+
 interface TaskFilter {
   status?: TaskStatus;
   priority?: Priority;
   onlyAssignedToMe?: boolean;
   onlyCreatedByMe?: boolean;
   searchTerm?: string;
+  onlyRelatedTo?: RelatedEntityFilter;
 }
 
 export function useTasks(filter: TaskFilter = {}) {
@@ -39,11 +45,12 @@ export function useTasks(filter: TaskFilter = {}) {
     status, 
     priority, 
     onlyAssignedToMe = false, 
-    onlyCreatedByMe = false
+    onlyCreatedByMe = false,
+    onlyRelatedTo
   } = filter;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['tasks', status, priority, onlyAssignedToMe, onlyCreatedByMe, searchTerm, user?.id],
+    queryKey: ['tasks', status, priority, onlyAssignedToMe, onlyCreatedByMe, searchTerm, onlyRelatedTo, user?.id],
     queryFn: async () => {
       if (!user) return [];
       
@@ -63,6 +70,11 @@ export function useTasks(filter: TaskFilter = {}) {
       
       if (onlyCreatedByMe) {
         query = query.eq('assigned_by', user.id);
+      }
+      
+      if (onlyRelatedTo) {
+        query = query.eq('related_entity_id', onlyRelatedTo.entityId)
+              .eq('related_entity_type', onlyRelatedTo.entityType);
       }
       
       if (searchTerm) {
