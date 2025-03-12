@@ -32,6 +32,23 @@ export function RelatedTasks({ entityId, entityType }: RelatedTasksProps) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-medium">
+          {tasks.length === 0 ? "No tasks yet" : `${tasks.length} Task${tasks.length !== 1 ? 's' : ''}`}
+        </h3>
+        {!showTaskForm && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowTaskForm(true)}
+            className="flex items-center gap-1"
+          >
+            <PlusCircle className="h-4 w-4" />
+            New Task
+          </Button>
+        )}
+      </div>
+
       {showTaskForm ? (
         <div className="border p-4 rounded-md bg-muted/50 mb-4">
           <TaskCreationForm 
