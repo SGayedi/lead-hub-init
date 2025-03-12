@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useBusinessPlans } from "@/hooks/useBusinessPlans";
 import { useDocuments } from "@/hooks/useDocuments";
@@ -38,6 +37,16 @@ export function OpportunityBusinessPlanTab({ opportunityId }: OpportunityBusines
   
   const handleRequestBusinessPlan = () => {
     requestBusinessPlan.mutate({ opportunity_id: opportunityId });
+  };
+
+  const handleDocumentUploaded = async (files: File[]) => {
+    if (latestBusinessPlan && files.length > 0) {
+      const file = files[0];
+      uploadBusinessPlan.mutate({ 
+        businessPlanId: latestBusinessPlan.id, 
+        documentId: file.name // This will be replaced with actual document ID after upload
+      });
+    }
   };
   
   const handleApproveBusinessPlan = () => {

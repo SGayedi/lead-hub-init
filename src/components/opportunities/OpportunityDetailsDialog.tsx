@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Dialog,
@@ -77,7 +76,7 @@ export function OpportunityDetailsDialog({
           </TabsContent>
 
           <TabsContent value="business-plan" className="mt-4">
-            <OpportunityBusinessPlanTab opportunity={opportunity} />
+            <OpportunityBusinessPlanTab opportunityId={opportunity.id} />
           </TabsContent>
 
           <TabsContent value="checklist" className="mt-4">

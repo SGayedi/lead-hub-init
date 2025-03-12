@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { useDueDiligenceChecklists } from "@/hooks/useDueDiligenceChecklists";
@@ -31,8 +30,7 @@ export function OpportunityChecklistTab({ opportunity }: OpportunityChecklistTab
     if (editingNotes === itemId) {
       await updateChecklistItemNotes.mutateAsync({
         itemId,
-        notes,
-        status: 'in_progress' as ChecklistItemStatus
+        notes
       });
       setNotes("");
       setEditingNotes(null);

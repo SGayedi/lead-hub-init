@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -38,5 +37,24 @@ export function getStatusStyle(status: string): { color: string; bgColor: string
       return { color: 'text-red-500', bgColor: 'bg-red-100' };
     default:
       return { color: 'text-gray-500', bgColor: 'bg-gray-100' };
+  }
+}
+
+export function getStatusColorClass(status: string): string {
+  switch (status) {
+    case 'not_requested':
+      return 'bg-gray-100 text-gray-600';
+    case 'requested':
+      return 'bg-blue-100 text-blue-600';
+    case 'received':
+      return 'bg-yellow-100 text-yellow-600';
+    case 'updates_needed':
+      return 'bg-orange-100 text-orange-600';
+    case 'approved':
+      return 'bg-green-100 text-green-600';
+    case 'rejected':
+      return 'bg-red-100 text-red-600';
+    default:
+      return 'bg-gray-100 text-gray-600';
   }
 }
