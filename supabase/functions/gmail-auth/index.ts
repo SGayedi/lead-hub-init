@@ -10,10 +10,16 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-// Get environment variables with validation
+// Get environment variables from config.toml
 const GMAIL_CLIENT_ID = Deno.env.get("GMAIL_CLIENT_ID");
 const GMAIL_CLIENT_SECRET = Deno.env.get("GMAIL_CLIENT_SECRET");
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
+
+// Log environment variables for debugging
+console.log("Env variables loaded:");
+console.log("GMAIL_CLIENT_ID present:", !!GMAIL_CLIENT_ID);
+console.log("GMAIL_CLIENT_SECRET present:", !!GMAIL_CLIENT_SECRET);
+console.log("REDIRECT_URI:", REDIRECT_URI);
 
 // Validate required environment variables
 if (!GMAIL_CLIENT_ID) {
