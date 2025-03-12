@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,8 +19,11 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // Load user profile data
   useEffect(() => {
     const loadUserProfile = async () => {
       if (!user) return;
@@ -58,7 +60,6 @@ export default function Settings() {
     
     setIsLoading(true);
     try {
-      // Update the profiles table
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -82,6 +83,55 @@ export default function Settings() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!user) return;
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords don't match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -190,17 +240,38 @@ export default function Settings() {
               <div className="grid gap-4 max-w-xl">
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
+                  <Input 
+                    id="current-password" 
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
+                  <Input 
+                    id="confirm-password" 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
                 </div>
-                <Button className="w-fit">Update Password</Button>
+                <Button 
+                  className="w-fit"
+                  onClick={handleUpdatePassword}
+                  disabled={isUpdatingPassword || !newPassword || !confirmPassword}
+                >
+                  {isUpdatingPassword ? "Updating..." : "Update Password"}
+                </Button>
               </div>
             </CardContent>
           </Card>
