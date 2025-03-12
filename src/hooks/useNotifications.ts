@@ -11,13 +11,13 @@ const convertDbNotificationToNotification = (dbNotification: any): Notification 
   id: dbNotification.id,
   userId: dbNotification.user_id,
   title: dbNotification.title,
-  message: dbNotification.message,
+  content: dbNotification.message || dbNotification.content,
   type: dbNotification.type,
-  read: dbNotification.read,
+  isRead: dbNotification.read || dbNotification.is_read,
   relatedEntityId: dbNotification.related_entity_id,
   relatedEntityType: dbNotification.related_entity_type,
   createdAt: dbNotification.created_at,
-  updatedAt: dbNotification.updated_at
+  updatedAt: dbNotification.updated_at || dbNotification.created_at
 });
 
 export function useNotifications() {
@@ -45,7 +45,7 @@ export function useNotifications() {
     mutationFn: async (notificationId: string) => {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('id', notificationId);
       
       if (error) throw error;
@@ -64,9 +64,9 @@ export function useNotifications() {
       
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('user_id', user.id)
-        .eq('read', false);
+        .eq('is_read', false);
       
       if (error) throw error;
     },
@@ -85,6 +85,6 @@ export function useNotifications() {
     error,
     markAsRead,
     markAllAsRead,
-    unreadCount: data?.filter(notification => !notification.read).length || 0
+    unreadCount: data?.filter(notification => !notification.isRead).length || 0
   };
 }

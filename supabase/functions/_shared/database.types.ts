@@ -56,6 +56,23 @@ export interface Database {
           created_at: string
         }
       }
+      meetings: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          meeting_type: string
+          start_time: string
+          end_time: string
+          location: string | null
+          lead_id: string | null
+          created_by: string
+          outcome: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+      }
     }
   }
 }

@@ -66,7 +66,7 @@ export function NotificationCard({ notification, onClose }: NotificationCardProp
     <div 
       className={cn(
         "p-3 border-b hover:bg-accent cursor-pointer",
-        !notification.read && "bg-accent/30"
+        !notification.isRead && "bg-accent/30"
       )}
       onClick={handleClick}
     >
@@ -74,12 +74,12 @@ export function NotificationCard({ notification, onClose }: NotificationCardProp
         <div className="mt-0.5">{getIcon()}</div>
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium">{notification.title}</p>
-          <p className="text-xs text-muted-foreground">{notification.message}</p>
+          <p className="text-xs text-muted-foreground">{notification.content}</p>
           <p className="text-xs text-muted-foreground">
             {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
           </p>
         </div>
-        {!notification.read && (
+        {!notification.isRead && (
           <div className="h-2 w-2 rounded-full bg-blue-500" />
         )}
       </div>

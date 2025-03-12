@@ -1,3 +1,4 @@
+
 export type Role = "investor_services" | "legal_services" | "property_development" | "senior_management";
 
 export type InquiryType = "company" | "individual";
@@ -73,6 +74,9 @@ export type NotificationType =
   | 'task_due_soon'
   | 'task_overdue'
   | 'meeting_scheduled'
+  | 'lead_high_priority'  // Added missing notification type
+  | 'task_assigned'       // Added missing notification type
+  | 'meeting_reminder'    // Added missing notification type
   | 'system_notification';
 
 export type EntityType = "lead" | "task" | "meeting" | "document";
@@ -85,11 +89,12 @@ export interface Notification {
   title: string;
   content: string; 
   type: NotificationType;
-  isRead: boolean;
+  isRead: boolean;       // Changed from read to isRead to match the code
   relatedEntityId?: string;
   relatedEntityType?: 'lead' | 'task' | 'meeting';
   createdAt: string;
   updatedAt: string;
+  message?: string;      // Add message property to match code usage
 }
 
 export interface Task {
@@ -116,8 +121,10 @@ export interface Meeting {
   endTime: string;
   location?: string;
   leadId?: string;
+  leadName?: string;     // Added leadName property
   createdBy: string;
   outcome?: string;
+  notes?: string;        // Added notes property
   createdAt: string;
   updatedAt: string;
 }
