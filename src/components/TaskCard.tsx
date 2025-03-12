@@ -1,12 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { CheckCircle, Clock, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, Edit, MoreVertical } from 'lucide-react';
 import { Task } from '@/types/crm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTasks } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { TaskEditForm } from '@/components/TaskEditForm';
 
 interface TaskCardProps {
   task: Task;
@@ -15,6 +23,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onView }: TaskCardProps) {
   const { updateTask } = useTasks();
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   const getStatusIcon = () => {
     switch (task.status) {
@@ -64,66 +73,105 @@ export function TaskCard({ task, onView }: TaskCardProps) {
     updateTask.mutate({ id: task.id, status: 'completed' });
   };
   
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowEditDialog(true);
+  };
+  
   const isDueToday = task.dueDate && new Date(task.dueDate).toDateString() === new Date().toDateString();
   const isPastDue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed' && task.status !== 'canceled';
   
   return (
-    <div 
-      className={cn(
-        "border rounded-lg p-4 hover:shadow transition-shadow cursor-pointer",
-        isPastDue && "border-red-300 bg-red-50"
-      )}
-      onClick={() => onView && onView(task.id)}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-2">
-          {getStatusIcon()}
-          <h3 className="font-semibold">{task.title}</h3>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className={getPriorityColor()}>
-            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-          </Badge>
-          <Badge variant="outline" className={getStatusColor()}>
-            {task.status.split('_').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')}
-          </Badge>
-        </div>
-      </div>
-      
-      {task.description && (
-        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-          {task.description}
-        </p>
-      )}
-      
-      <div className="flex items-center justify-between mt-3">
-        <div className="text-xs text-muted-foreground">
-          {task.dueDate ? (
-            <span className={cn(
-              isPastDue && "text-red-600 font-semibold",
-              isDueToday && "text-amber-600 font-semibold"
-            )}>
-              Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
-            </span>
-          ) : (
-            <span>No due date</span>
-          )}
+    <>
+      <div 
+        className={cn(
+          "border rounded-lg p-4 hover:shadow transition-shadow cursor-pointer",
+          isPastDue && "border-red-300 bg-red-50"
+        )}
+        onClick={() => onView && onView(task.id)}
+      >
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-2">
+            {getStatusIcon()}
+            <h3 className="font-semibold">{task.title}</h3>
+          </div>
+          <div className="flex gap-2 items-center">
+            <div className="flex gap-2">
+              <Badge variant="outline" className={getPriorityColor()}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </Badge>
+              <Badge variant="outline" className={getStatusColor()}>
+                {task.status.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
+              </Badge>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                {task.status !== 'completed' && task.status !== 'canceled' && (
+                  <DropdownMenuItem onClick={handleComplete}>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Mark as Complete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
-        {task.status !== 'completed' && task.status !== 'canceled' && (
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="text-xs h-7"
-            onClick={handleComplete}
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Complete
-          </Button>
+        {task.description && (
+          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+            {task.description}
+          </p>
         )}
+        
+        <div className="flex items-center justify-between mt-3">
+          <div className="text-xs text-muted-foreground">
+            {task.dueDate ? (
+              <span className={cn(
+                isPastDue && "text-red-600 font-semibold",
+                isDueToday && "text-amber-600 font-semibold"
+              )}>
+                Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
+              </span>
+            ) : (
+              <span>No due date</span>
+            )}
+          </div>
+          
+          {task.status !== 'completed' && task.status !== 'canceled' && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="text-xs h-7"
+              onClick={handleComplete}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Complete
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Edit Task</DialogTitle>
+          <TaskEditForm 
+            task={task} 
+            onSuccess={() => setShowEditDialog(false)}
+            onCancel={() => setShowEditDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

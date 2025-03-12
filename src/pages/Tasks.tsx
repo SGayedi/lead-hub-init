@@ -14,8 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TaskCard } from "@/components/TaskCard";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { TaskCreationForm } from "@/components/TaskCreationForm";
+import { TaskEditForm } from "@/components/TaskEditForm";
 import { useTasks } from "@/hooks/useTasks";
-import { TaskStatus, Priority } from "@/types/crm";
+import { TaskStatus, Priority, Task } from "@/types/crm";
 import { Spinner } from "@/components/Spinner";
 
 export default function Tasks() {
@@ -24,6 +25,7 @@ export default function Tasks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'all' | 'assigned_to_me' | 'created_by_me'>('all');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   
   const { tasks, isLoading } = useTasks({
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -36,6 +38,13 @@ export default function Tasks() {
   const pendingTasks = tasks.filter(task => task.status === 'pending');
   const inProgressTasks = tasks.filter(task => task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
+  
+  const handleViewTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+    }
+  };
   
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -144,7 +153,7 @@ export default function Tasks() {
                   </h3>
                   <div className="space-y-3">
                     {pendingTasks.map(task => (
-                      <TaskCard key={task.id} task={task} />
+                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
                     ))}
                     {pendingTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
@@ -162,7 +171,7 @@ export default function Tasks() {
                   </h3>
                   <div className="space-y-3">
                     {inProgressTasks.map(task => (
-                      <TaskCard key={task.id} task={task} />
+                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
                     ))}
                     {inProgressTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
@@ -180,7 +189,7 @@ export default function Tasks() {
                   </h3>
                   <div className="space-y-3">
                     {completedTasks.map(task => (
-                      <TaskCard key={task.id} task={task} />
+                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
                     ))}
                     {completedTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
@@ -205,7 +214,7 @@ export default function Tasks() {
             ) : (
               <div className="space-y-3">
                 {tasks.map(task => (
-                  <TaskCard key={task.id} task={task} />
+                  <TaskCard key={task.id} task={task} onView={handleViewTask} />
                 ))}
               </div>
             )}
@@ -213,10 +222,25 @@ export default function Tasks() {
         </Tabs>
       </div>
       
+      {/* Create Task Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-lg">
           <DialogTitle>Create New Task</DialogTitle>
           <TaskCreationForm onSuccess={() => setShowCreateDialog(false)} />
+        </DialogContent>
+      </Dialog>
+      
+      {/* View/Edit Task Dialog */}
+      <Dialog open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Edit Task</DialogTitle>
+          {selectedTask && (
+            <TaskEditForm 
+              task={selectedTask} 
+              onSuccess={() => setSelectedTask(null)} 
+              onCancel={() => setSelectedTask(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

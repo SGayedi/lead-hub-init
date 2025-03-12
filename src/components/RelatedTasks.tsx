@@ -6,6 +6,9 @@ import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { TaskCreationForm } from "@/components/TaskCreationForm";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { TaskEditForm } from "@/components/TaskEditForm";
+import { Task } from "@/types/crm";
 
 interface RelatedTasksProps {
   entityId: string;
@@ -14,6 +17,8 @@ interface RelatedTasksProps {
 
 export function RelatedTasks({ entityId, entityType }: RelatedTasksProps) {
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
   const { tasks, isLoading } = useTasks({
     searchTerm: "",
     onlyRelatedTo: {
@@ -21,6 +26,13 @@ export function RelatedTasks({ entityId, entityType }: RelatedTasksProps) {
       entityType
     }
   });
+
+  const handleViewTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -64,10 +76,24 @@ export function RelatedTasks({ entityId, entityType }: RelatedTasksProps) {
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onView={handleViewTask} />
           ))}
         </div>
       )}
+
+      {/* View/Edit Task Dialog */}
+      <Dialog open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle>Edit Task</DialogTitle>
+          {selectedTask && (
+            <TaskEditForm 
+              task={selectedTask} 
+              onSuccess={() => setSelectedTask(null)}
+              onCancel={() => setSelectedTask(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
