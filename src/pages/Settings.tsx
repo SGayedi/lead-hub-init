@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,80 @@ import { LanguageSelect } from "@/components/LanguageSelect";
 import { Lock, Bell, HelpCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load user profile data
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, email, role")
+          .eq("id", user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setName(data.full_name || "");
+          setEmail(data.email || user.email || "");
+          setRole(data.role || "");
+        }
+      } catch (error) {
+        console.error("Error loading user profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile information",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    loadUserProfile();
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // Update the profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: name,
+          email: email,
+        })
+        .eq("id", user.id);
+        
+      if (profileError) throw profileError;
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile information",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -45,17 +115,34 @@ export default function Settings() {
               <div className="grid gap-4 max-w-xl">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Your name" />
+                  <Input 
+                    id="name" 
+                    placeholder="Your name" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="your.email@example.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="your.email@example.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
-                  <Input id="role" placeholder="Your role" disabled value="Senior Management" />
+                  <Input id="role" placeholder="Your role" disabled value={role} />
                 </div>
-                <Button className="w-fit">Save Changes</Button>
+                <Button 
+                  className="w-fit" 
+                  onClick={handleSaveProfile}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>
