@@ -1,30 +1,15 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { Lead } from "@/types/crm";
+import { Lead, GmailEmail } from "@/types/crm";
 import { Search, Mail, ArrowRight, Flag, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { LeadCreationForm } from "@/components/LeadCreationForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-// Define the GmailEmail type
-interface GmailEmail {
-  id: string;
-  subject: string;
-  sender_name: string;
-  sender_email: string;
-  received_at: string;
-  body: string;
-  read: boolean;
-  has_attachments: boolean;
-  is_enquiry: boolean;
-  associated_lead_id?: string;
-}
 
 export default function Enquiries() {
   const { toast } = useToast();
@@ -57,7 +42,7 @@ export default function Enquiries() {
       }
       
       if (data) {
-        setEmails(data as GmailEmail[]);
+        setEmails(data as unknown as GmailEmail[]);
       }
     } catch (error) {
       console.error("Error fetching emails:", error);
@@ -73,7 +58,7 @@ export default function Enquiries() {
   const handleMarkAsEnquiry = async (emailId: string) => {
     try {
       const { error } = await supabase
-        .from('gmail_emails')
+        .from('gmail_emails' as any)
         .update({ is_enquiry: true })
         .eq('id', emailId);
       
@@ -140,7 +125,7 @@ export default function Enquiries() {
     
     try {
       const { error } = await supabase
-        .from('gmail_emails')
+        .from('gmail_emails' as any)
         .update({ 
           associated_lead_id: leadId,
           is_enquiry: true 
@@ -391,7 +376,7 @@ export default function Enquiries() {
                                 name: selectedEmail?.sender_name || "",
                                 email: selectedEmail?.sender_email || "",
                                 notes: selectedEmail?.body || "",
-                                source: "gmail",
+                                source: "gmail" as any,
                               }}
                               onSuccess={() => {
                                 setSelectedEmail(null);

@@ -1,11 +1,10 @@
-
 export type Role = "investor_services" | "legal_services" | "property_development" | "senior_management";
 
 export type InquiryType = "company" | "individual";
 
 export type Priority = "high" | "medium" | "low";
 
-export type LeadSource = "referral" | "website" | "direct" | "event" | "outlook" | "other";
+export type LeadSource = "referral" | "website" | "direct" | "event" | "outlook" | "gmail" | "other";
 
 export type LeadStatus = 
   | "active" 
@@ -32,6 +31,19 @@ export interface Lead {
 }
 
 export interface OutlookEmail {
+  id: string;
+  subject: string;
+  sender_name: string;
+  sender_email: string;
+  received_at: string;
+  body: string;
+  read: boolean;
+  has_attachments: boolean;
+  is_enquiry: boolean;
+  associated_lead_id?: string;
+}
+
+export interface GmailEmail {
   id: string;
   subject: string;
   sender_name: string;
