@@ -17,7 +17,9 @@ const convertDbDocumentToDocument = (dbDocument: any): Document => ({
   relatedEntityId: dbDocument.related_entity_id,
   relatedEntityType: dbDocument.related_entity_type,
   createdAt: dbDocument.created_at,
-  updatedAt: dbDocument.updated_at
+  updatedAt: dbDocument.updated_at,
+  version: dbDocument.version || 1,
+  versionHistory: dbDocument.version_history || []
 });
 
 interface DocumentFilter {
@@ -30,6 +32,8 @@ export function useDocuments(filter: DocumentFilter = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState(filter.searchTerm || '');
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['documents', filter.relatedEntityId, filter.relatedEntityType, searchTerm, user?.id],
@@ -63,39 +67,92 @@ export function useDocuments(filter: DocumentFilter = {}) {
     mutationFn: async ({ 
       file, 
       relatedEntityId, 
-      relatedEntityType 
+      relatedEntityType,
+      existingDocumentId
     }: { 
       file: File, 
       relatedEntityId: string, 
-      relatedEntityType: "lead" | "meeting" 
+      relatedEntityType: "lead" | "meeting",
+      existingDocumentId?: string
     }) => {
       if (!user) throw new Error('User not authenticated');
       
-      // 1. Upload file to storage
-      const filePath = `${relatedEntityType}/${relatedEntityId}/${file.name}`;
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-      
-      if (uploadError) throw uploadError;
-      
-      // 2. Create document record in database
-      const { error: dbError } = await supabase
-        .from('documents')
-        .insert([{
-          name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
-          related_entity_id: relatedEntityId,
-          related_entity_type: relatedEntityType
-        }]);
-      
-      if (dbError) {
-        // If database insert fails, try to delete the uploaded file
-        await supabase.storage.from('documents').remove([filePath]);
-        throw dbError;
+      // If updating an existing document
+      if (existingDocumentId) {
+        const existingDoc = data?.find(d => d.id === existingDocumentId);
+        if (!existingDoc) throw new Error('Document not found');
+        
+        // Get existing document details to create new version
+        const newVersion = (existingDoc.version || 1) + 1;
+        const fileName = file.name;
+        const filePath = `${relatedEntityType}/${relatedEntityId}/${newVersion}_${fileName}`;
+        
+        // Store the old version information
+        const oldVersionInfo = {
+          version: existingDoc.version || 1,
+          path: existingDoc.filePath,
+          uploadedAt: existingDoc.updatedAt || existingDoc.createdAt,
+          size: existingDoc.fileSize
+        };
+        
+        const versionHistory = [...(existingDoc.versionHistory || []), oldVersionInfo];
+        
+        // 1. Upload the new version
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file);
+        
+        if (uploadError) throw uploadError;
+        
+        // 2. Update the document record
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            version: newVersion,
+            version_history: versionHistory,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingDocumentId);
+        
+        if (updateError) {
+          // If database update fails, try to delete the uploaded file
+          await supabase.storage.from('documents').remove([filePath]);
+          throw updateError;
+        }
+      } else {
+        // Creating a new document
+        const filePath = `${relatedEntityType}/${relatedEntityId}/${file.name}`;
+        
+        // 1. Upload file to storage
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file);
+        
+        if (uploadError) throw uploadError;
+        
+        // 2. Create document record in database
+        const { error: dbError } = await supabase
+          .from('documents')
+          .insert([{
+            name: file.name,
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user.id,
+            related_entity_id: relatedEntityId,
+            related_entity_type: relatedEntityType,
+            version: 1,
+            version_history: []
+          }]);
+        
+        if (dbError) {
+          // If database insert fails, try to delete the uploaded file
+          await supabase.storage.from('documents').remove([filePath]);
+          throw dbError;
+        }
       }
     },
     onSuccess: () => {
@@ -115,6 +172,12 @@ export function useDocuments(filter: DocumentFilter = {}) {
         .remove([document.filePath]);
       
       if (storageError) throw storageError;
+      
+      // Delete all version history files
+      if (document.versionHistory && document.versionHistory.length > 0) {
+        const paths = document.versionHistory.map(v => v.path);
+        await supabase.storage.from('documents').remove(paths);
+      }
       
       // 2. Delete document record from database
       const { error: dbError } = await supabase
@@ -146,6 +209,30 @@ export function useDocuments(filter: DocumentFilter = {}) {
     return data.signedUrl;
   };
 
+  // Function to set up document preview
+  const previewDocumentVersion = async (document: Document, versionPath?: string) => {
+    try {
+      const path = versionPath || document.filePath;
+      const url = await getDocumentUrl(path);
+      if (url) {
+        setPreviewDocument(document);
+        setPreviewUrl(url);
+        return url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting document URL:', error);
+      toast.error('Failed to generate preview URL');
+      return null;
+    }
+  };
+
+  // Clear preview
+  const clearPreview = () => {
+    setPreviewDocument(null);
+    setPreviewUrl(null);
+  };
+
   return {
     documents: data || [],
     isLoading,
@@ -155,6 +242,10 @@ export function useDocuments(filter: DocumentFilter = {}) {
     deleteDocument,
     getDocumentUrl,
     searchTerm,
-    setSearchTerm
+    setSearchTerm,
+    previewDocument,
+    previewUrl,
+    previewDocumentVersion,
+    clearPreview
   };
 }

@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileText, Trash2, Download, Eye } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, Eye, History, ArrowUpCircle } from 'lucide-react';
 import { useDocuments } from '@/hooks/useDocuments';
 import { 
   Card, 
@@ -17,9 +17,18 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger 
+  DialogTrigger,
+  DialogClose
 } from '@/components/ui/dialog';
 import { Spinner } from './Spinner';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { format } from 'date-fns';
+import { Badge } from './ui/badge';
 
 interface DocumentUploaderProps {
   relatedEntityId: string;
@@ -31,16 +40,21 @@ export function DocumentUploader({
   relatedEntityType 
 }: DocumentUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewName, setPreviewName] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [versionDocument, setVersionDocument] = useState<any>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   
   const { 
     documents, 
     isLoading, 
     uploadDocument, 
     deleteDocument, 
-    getDocumentUrl 
+    getDocumentUrl,
+    previewDocument,
+    previewUrl,
+    previewDocumentVersion,
+    clearPreview
   } = useDocuments({
     relatedEntityId,
     relatedEntityType
@@ -64,13 +78,15 @@ export function DocumentUploader({
       await uploadDocument.mutateAsync({
         file,
         relatedEntityId,
-        relatedEntityType
+        relatedEntityType,
+        existingDocumentId: versionDocument?.id
       });
       
-      // Reset file input
+      // Reset file input and state
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      setVersionDocument(null);
     } catch (error) {
       console.error('Error uploading file:', error);
     } finally {
@@ -85,21 +101,18 @@ export function DocumentUploader({
   };
   
   const handleViewDocument = async (document: any) => {
-    try {
-      const url = await getDocumentUrl(document.filePath);
-      if (url) {
-        setPreviewUrl(url);
-        setPreviewName(document.name);
-      }
-    } catch (error) {
-      console.error('Error getting document URL:', error);
-      toast.error('Failed to generate preview URL');
-    }
+    await previewDocumentVersion(document);
+  };
+
+  const handleViewVersion = async (document: any, versionPath: string) => {
+    setSelectedVersion(versionPath);
+    await previewDocumentVersion(document, versionPath);
   };
   
-  const handleDownloadDocument = async (document: any) => {
+  const handleDownloadDocument = async (document: any, versionPath?: string) => {
     try {
-      const url = await getDocumentUrl(document.filePath);
+      const path = versionPath || document.filePath;
+      const url = await getDocumentUrl(path);
       if (url) {
         const link = document.createElement('a');
         link.href = url;
@@ -114,51 +127,107 @@ export function DocumentUploader({
     }
   };
   
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('image')) {
-      return 'image';
-    } else if (fileType.includes('pdf')) {
-      return 'pdf';
-    } else if (fileType.includes('word') || fileType.includes('document')) {
-      return 'doc';
-    } else if (fileType.includes('excel') || fileType.includes('sheet')) {
-      return 'excel';
-    } else {
-      return 'file';
-    }
-  };
-  
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
+
+  const handleUploadNewVersion = (document: any) => {
+    setVersionDocument(document);
+    fileInputRef.current?.click();
+  };
   
   const renderFilePreview = () => {
-    if (!previewUrl || !previewName) return null;
+    if (!previewUrl || !previewDocument) return null;
     
-    const fileExtension = previewName.split('.').pop()?.toLowerCase();
-    const isImage = fileExtension && ['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension);
+    const fileExtension = previewDocument.name.split('.').pop()?.toLowerCase();
+    const isImage = fileExtension && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
     const isPdf = fileExtension === 'pdf';
     
-    if (isImage) {
-      return <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh]" />;
-    } else if (isPdf) {
-      return <iframe src={previewUrl} className="w-full h-[70vh]" />;
-    } else {
-      return (
-        <div className="text-center p-10">
-          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <p>Preview not available for this file type</p>
-          <Button 
-            className="mt-4" 
-            onClick={() => window.open(previewUrl, '_blank')}
-          >
-            Open in new tab
-          </Button>
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-semibold">{previewDocument.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              {formatFileSize(previewDocument.fileSize)} • Version {selectedVersion ? 'History' : previewDocument.version}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => handleDownloadDocument(previewDocument, selectedVersion || undefined)}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+            {!selectedVersion && previewDocument.versionHistory?.length > 0 && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+              >
+                <History className="mr-2 h-4 w-4" />
+                {showVersionHistory ? 'Hide History' : 'View History'}
+              </Button>
+            )}
+          </div>
         </div>
-      );
-    }
+
+        {showVersionHistory && !selectedVersion && (
+          <div className="border rounded-md p-3 space-y-2 mb-4">
+            <h4 className="font-medium text-sm">Version History</h4>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {previewDocument.versionHistory.map((version: any, index: number) => (
+                <div key={index} className="flex items-center justify-between text-sm p-2 hover:bg-secondary rounded-md">
+                  <div>
+                    <span className="font-medium">Version {version.version}</span>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(version.size)} • {format(new Date(version.uploadedAt), 'PPp')}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleViewVersion(previewDocument, version.path)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDownloadDocument(previewDocument, version.path)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {isImage ? (
+          <img src={previewUrl} alt={previewDocument.name} className="max-w-full max-h-[60vh] rounded-md mx-auto" />
+        ) : isPdf ? (
+          <iframe src={previewUrl} className="w-full h-[70vh] rounded-md" />
+        ) : (
+          <div className="text-center p-10">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <p>Preview not available for this file type</p>
+            <Button 
+              className="mt-4" 
+              onClick={() => window.open(previewUrl, '_blank')}
+            >
+              Open in new tab
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   };
   
   return (
@@ -192,8 +261,18 @@ export function DocumentUploader({
               ) : (
                 <UploadCloud className="mr-2 h-4 w-4" />
               )}
-              Upload Document
+              {versionDocument ? `Upload New Version of ${versionDocument.name}` : 'Upload Document'}
             </Button>
+            {versionDocument && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="mt-2"
+                onClick={() => setVersionDocument(null)}
+              >
+                Cancel
+              </Button>
+            )}
           </div>
           
           {isLoading ? (
@@ -214,9 +293,14 @@ export function DocumentUploader({
                   <div className="flex items-center gap-3">
                     <FileText className="h-8 w-8 text-blue-500" />
                     <div>
-                      <p className="font-medium text-sm">{document.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{document.name}</p>
+                        {document.version > 1 && (
+                          <Badge variant="outline" className="text-xs">v{document.version}</Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(document.fileSize)}
+                        {formatFileSize(document.fileSize)} • {format(new Date(document.updatedAt || document.createdAt), 'PP')}
                       </p>
                     </div>
                   </div>
@@ -228,6 +312,31 @@ export function DocumentUploader({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => handleUploadNewVersion(document)}
+                          className="cursor-pointer"
+                        >
+                          <ArrowUpCircle className="h-4 w-4 mr-2" />
+                          Upload New Version
+                        </DropdownMenuItem>
+                        {document.versionHistory && document.versionHistory.length > 0 && (
+                          <DropdownMenuItem 
+                            onClick={() => handleViewDocument(document)}
+                            className="cursor-pointer"
+                          >
+                            <History className="h-4 w-4 mr-2" />
+                            View Version History
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button 
                       variant="ghost" 
                       size="icon"
@@ -252,11 +361,17 @@ export function DocumentUploader({
         
         <Dialog 
           open={!!previewUrl} 
-          onOpenChange={(open) => !open && setPreviewUrl(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              clearPreview();
+              setShowVersionHistory(false);
+              setSelectedVersion(null);
+            }
+          }}
         >
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>{previewName}</DialogTitle>
+              <DialogTitle>Document Preview</DialogTitle>
             </DialogHeader>
             {renderFilePreview()}
           </DialogContent>

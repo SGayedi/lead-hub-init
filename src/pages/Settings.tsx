@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,15 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { LanguageSelect } from "@/components/LanguageSelect";
-import { Lock, Bell, HelpCircle, User } from "lucide-react";
+import { Lock, Bell, HelpCircle, User, Sun, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -153,6 +156,14 @@ export default function Settings() {
             <Lock className="h-4 w-4" />
             Security
           </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-2">
+            {theme === "dark" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+            Appearance
+          </TabsTrigger>
           <TabsTrigger value="language" className="flex items-center gap-2">
             <HelpCircle className="h-4 w-4" />
             Language
@@ -272,6 +283,56 @@ export default function Settings() {
                 >
                   {isUpdatingPassword ? "Updating..." : "Update Password"}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="appearance">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 max-w-xl">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium">Theme</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select your preferred theme for the CRM interface.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <div 
+                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "light" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
+                      onClick={() => setTheme("light")}
+                    >
+                      <div className="h-24 w-full bg-[#FFFFFF] border rounded-md flex items-center justify-center">
+                        <Sun className="h-8 w-8 text-black" />
+                      </div>
+                      <span className="font-medium">Light</span>
+                    </div>
+                    
+                    <div 
+                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "dark" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
+                      onClick={() => setTheme("dark")}
+                    >
+                      <div className="h-24 w-full bg-[#1A1F2C] border rounded-md flex items-center justify-center">
+                        <Moon className="h-8 w-8 text-white" />
+                      </div>
+                      <span className="font-medium">Dark</span>
+                    </div>
+                    
+                    <div 
+                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "system" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
+                      onClick={() => setTheme("system")}
+                    >
+                      <div className="h-24 w-full bg-gradient-to-r from-[#FFFFFF] to-[#1A1F2C] border rounded-md flex items-center justify-center">
+                        <div className="flex">
+                          <Sun className="h-8 w-8 text-black" />
+                          <Moon className="h-8 w-8 text-white ml-2" />
+                        </div>
+                      </div>
+                      <span className="font-medium">System</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

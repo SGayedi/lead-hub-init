@@ -1,9 +1,11 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
+import { ThemeProvider } from "./components/ThemeProvider";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
@@ -28,25 +30,27 @@ function OutlookCallbackHandler() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <OutlookCallbackHandler />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Index />} />
-              <Route path="leads" element={<Leads />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="meetings" element={<Meetings />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-          <SonnerToaster position="top-right" />
-        </AuthProvider>
-      </Router>
+      <ThemeProvider defaultTheme="system" storageKey="crm-theme">
+        <Router>
+          <AuthProvider>
+            <OutlookCallbackHandler />
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route index element={<Index />} />
+                <Route path="leads" element={<Leads />} />
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="meetings" element={<Meetings />} />
+                <Route path="calendar" element={<Calendar />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+            <SonnerToaster position="top-right" />
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
