@@ -48,20 +48,20 @@ export default function CalendarPage() {
   });
 
   // Custom day rendering for the calendar
-  const renderDay = (day: Date) => {
+  const renderDay = (date: Date) => {
     const dayMeetings = meetings.filter(meeting => 
-      isSameDay(new Date(meeting.startTime), day)
+      isSameDay(new Date(meeting.startTime), date)
     );
     
     const dayTasks = tasks.filter(task => 
-      task.dueDate && isSameDay(new Date(task.dueDate), day)
+      task.dueDate && isSameDay(new Date(task.dueDate), date)
     );
 
     const hasEvents = dayMeetings.length > 0 || dayTasks.length > 0;
 
     return (
       <div className="h-14 w-14 p-0 relative flex flex-col items-center justify-center">
-        <span>{day.getDate()}</span>
+        <span>{date.getDate()}</span>
         {hasEvents && (
           <div className="absolute bottom-1 flex gap-1">
             {dayMeetings.length > 0 && (
@@ -111,9 +111,9 @@ export default function CalendarPage() {
                 onSelect={setSelectedDate}
                 className="rounded-md border"
                 components={{
-                  Day: ({ day, ...props }) => (
+                  Day: ({ date, ...props }) => (
                     <button {...props}>
-                      {renderDay(day)}
+                      {renderDay(date)}
                     </button>
                   ),
                 }}
