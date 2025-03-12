@@ -1,4 +1,3 @@
-
 export type Role = "investor_services" | "legal_services" | "property_development" | "senior_management";
 
 export type InquiryType = "company" | "individual";
@@ -74,9 +73,9 @@ export type NotificationType =
   | 'task_due_soon'
   | 'task_overdue'
   | 'meeting_scheduled'
-  | 'lead_high_priority'  // Added missing notification type
-  | 'task_assigned'       // Added missing notification type
-  | 'meeting_reminder'    // Added missing notification type
+  | 'lead_high_priority'
+  | 'task_assigned'
+  | 'meeting_reminder'
   | 'system_notification';
 
 export type EntityType = "lead" | "task" | "meeting" | "document";
@@ -89,12 +88,12 @@ export interface Notification {
   title: string;
   content: string; 
   type: NotificationType;
-  isRead: boolean;       // Changed from read to isRead to match the code
+  isRead: boolean;
   relatedEntityId?: string;
   relatedEntityType?: 'lead' | 'task' | 'meeting';
   createdAt: string;
   updatedAt: string;
-  message?: string;      // Add message property to match code usage
+  message?: string;
 }
 
 export interface Task {
@@ -121,10 +120,10 @@ export interface Meeting {
   endTime: string;
   location?: string;
   leadId?: string;
-  leadName?: string;     // Added leadName property
+  leadName?: string;
   createdBy: string;
   outcome?: string;
-  notes?: string;        // Added notes property
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -140,6 +139,13 @@ export interface Document {
   relatedEntityType: "lead" | "meeting";
   createdAt: string;
   updatedAt: string;
+  version: number;
+  versionHistory?: {
+    version: number;
+    path: string;
+    uploadedAt: string;
+    size: number;
+  }[];
 }
 
 export interface Comment {

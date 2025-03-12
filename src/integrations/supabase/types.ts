@@ -51,6 +51,8 @@ export type Database = {
           related_entity_type: string
           updated_at: string
           uploaded_by: string
+          version: number
+          version_history: Json[] | null
         }
         Insert: {
           created_at?: string
@@ -63,6 +65,8 @@ export type Database = {
           related_entity_type: string
           updated_at?: string
           uploaded_by: string
+          version?: number
+          version_history?: Json[] | null
         }
         Update: {
           created_at?: string
@@ -75,6 +79,8 @@ export type Database = {
           related_entity_type?: string
           updated_at?: string
           uploaded_by?: string
+          version?: number
+          version_history?: Json[] | null
         }
         Relationships: []
       }
