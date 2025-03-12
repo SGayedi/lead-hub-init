@@ -1,74 +1,18 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Filter, Clock, CheckCircle, Archive, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Lead, LeadStatus } from "@/types/crm";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { LeadCreationForm } from "@/components/LeadCreationForm";
-
-// Extended mock leads to include different statuses
-const mockLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Acme Corp",
-    inquiryType: "company",
-    priority: "high",
-    source: "referral",
-    status: "active",
-    exportQuota: 80,
-    plotSize: 2,
-    email: "info@acme.com",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    name: "Global Enterprises",
-    inquiryType: "company",
-    priority: "medium",
-    source: "website",
-    status: "waiting_for_details",
-    exportQuota: 60,
-    plotSize: 0.8,
-    email: "contact@global.co",
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "3",
-    name: "Eastern Development LLC",
-    inquiryType: "company",
-    priority: "high",
-    source: "direct",
-    status: "waiting_for_approval",
-    exportQuota: 70,
-    plotSize: 0.9,
-    email: "business@eastern.com",
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    updatedAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: "4",
-    name: "John Smith",
-    inquiryType: "individual",
-    priority: "low",
-    source: "event",
-    status: "archived",
-    email: "john.smith@email.com",
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-    updatedAt: new Date(Date.now() - 259200000).toISOString(),
-  },
-];
+import { useLeads } from "@/hooks/useLeads";
+import { LeadStatus } from "@/types/crm";
 
 export default function Leads() {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
-  const { toast } = useToast();
+  const { leads, isLoading, approveLead, rejectLead, archiveLead } = useLeads();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("active");
+  const [activeTab, setActiveTab] = useState<LeadStatus | "all">("active");
   const [createLeadOpen, setCreateLeadOpen] = useState(false);
 
   const getPriorityColor = (priority: Lead["priority"]) => {
@@ -98,58 +42,22 @@ export default function Leads() {
   };
 
   const handleApprove = (leadId: string) => {
-    setLeads(prev => 
-      prev.map(lead => 
-        lead.id === leadId 
-          ? { ...lead, status: "active" as LeadStatus } 
-          : lead
-      )
-    );
-    
-    toast({
-      title: "Lead Approved",
-      description: "The lead has been approved and is now active."
-    });
+    approveLead.mutate(leadId);
   };
 
   const handleReject = (leadId: string) => {
-    setLeads(prev => 
-      prev.map(lead => 
-        lead.id === leadId 
-          ? { ...lead, status: "rejected" as LeadStatus } 
-          : lead
-      )
-    );
-    
-    toast({
-      title: "Lead Rejected",
-      description: "The lead has been rejected."
-    });
+    rejectLead.mutate(leadId);
   };
 
   const handleArchive = (leadId: string) => {
-    setLeads(prev => 
-      prev.map(lead => 
-        lead.id === leadId 
-          ? { ...lead, status: "archived" as LeadStatus } 
-          : lead
-      )
-    );
-    
-    toast({
-      title: "Lead Archived",
-      description: "The lead has been archived."
-    });
+    archiveLead.mutate(leadId);
   };
 
-  // Filter leads based on search query and active tab
   const filteredLeads = leads.filter(lead => {
-    // Status filter
     if (activeTab !== "all" && lead.status !== activeTab) {
       return false;
     }
     
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -218,7 +126,13 @@ export default function Leads() {
       </div>
 
       <div className="grid gap-4">
-        {filteredLeads.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-10">
+              <p className="text-muted-foreground">Loading leads...</p>
+            </CardContent>
+          </Card>
+        ) : filteredLeads.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-10">
               <p className="text-muted-foreground">No leads found matching your criteria</p>
@@ -272,7 +186,6 @@ export default function Leads() {
                     )}
                   </div>
                   
-                  {/* Actions based on status */}
                   {lead.status === "waiting_for_approval" && (
                     <div className="flex gap-2 mt-2">
                       <Button size="sm" onClick={() => handleApprove(lead.id)}>

@@ -9,7 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          created_at: string
+          email: string | null
+          export_quota: number | null
+          id: string
+          inquiry_type: string
+          name: string
+          notes: string | null
+          outlook_email_id: string | null
+          phone: string | null
+          plot_size: number | null
+          priority: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          export_quota?: number | null
+          id?: string
+          inquiry_type: string
+          name: string
+          notes?: string | null
+          outlook_email_id?: string | null
+          phone?: string | null
+          plot_size?: number | null
+          priority: string
+          source: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          export_quota?: number | null
+          id?: string
+          inquiry_type?: string
+          name?: string
+          notes?: string | null
+          outlook_email_id?: string | null
+          phone?: string | null
+          plot_size?: number | null
+          priority?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outlook_emails: {
+        Row: {
+          associated_lead_id: string | null
+          body: string
+          created_at: string
+          has_attachments: boolean
+          id: string
+          is_enquiry: boolean
+          read: boolean
+          received_at: string
+          sender_email: string
+          sender_name: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          associated_lead_id?: string | null
+          body: string
+          created_at?: string
+          has_attachments?: boolean
+          id?: string
+          is_enquiry?: boolean
+          read?: boolean
+          received_at: string
+          sender_email: string
+          sender_name: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          associated_lead_id?: string | null
+          body?: string
+          created_at?: string
+          has_attachments?: boolean
+          id?: string
+          is_enquiry?: boolean
+          read?: boolean
+          received_at?: string
+          sender_email?: string
+          sender_name?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlook_emails_associated_lead_id_fkey"
+            columns: ["associated_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      translations: {
+        Row: {
+          az: string | null
+          created_at: string
+          en: string
+          id: string
+          key: string
+          ru: string | null
+          tr: string | null
+          updated_at: string
+        }
+        Insert: {
+          az?: string | null
+          created_at?: string
+          en: string
+          id?: string
+          key: string
+          ru?: string | null
+          tr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          az?: string | null
+          created_at?: string
+          en?: string
+          id?: string
+          key?: string
+          ru?: string | null
+          tr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

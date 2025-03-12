@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { InquiryType, Priority, LeadSource } from "@/types/crm";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface LeadCreationFormProps {
   initialData?: {
@@ -26,7 +27,6 @@ interface LeadCreationFormProps {
 }
 
 export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormProps) {
-  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     inquiryType: "company" as InquiryType,
@@ -81,7 +81,37 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const queryClient = useQueryClient();
+
+  const createLead = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const { error } = await supabase
+        .from("leads")
+        .insert([{
+          name: data.name,
+          inquiry_type: data.inquiryType,
+          priority: data.priority,
+          source: data.source,
+          export_quota: data.exportQuota ? parseInt(data.exportQuota) : null,
+          plot_size: data.plotSize ? parseFloat(data.plotSize) : null,
+          email: data.email,
+          phone: data.phone,
+          notes: data.notes,
+        }]);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast.success("Lead created successfully");
+      onSuccess?.();
+    },
+    onError: () => {
+      toast.error("Failed to create lead");
+    }
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -104,13 +134,11 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
               size="sm" 
               variant="outline" 
               onClick={() => {
-                // In a real app, you would save with waiting_for_details status
-                toast({
-                  title: "Lead Saved",
-                  description: "Lead saved with 'Waiting for Details' status."
+                createLead.mutate({
+                  ...formData,
+                  status: "waiting_for_details"
                 });
                 detailsToast.dismiss();
-                onSuccess?.();
               }}
             >
               Wait for Details
@@ -118,13 +146,11 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
             <Button 
               size="sm" 
               onClick={() => {
-                // In a real app, you would save with waiting_for_approval status
-                toast({
-                  title: "Lead Saved",
-                  description: "Lead sent for management approval."
+                createLead.mutate({
+                  ...formData,
+                  status: "waiting_for_approval"
                 });
                 detailsToast.dismiss();
-                onSuccess?.();
               }}
             >
               Request Approval
@@ -136,13 +162,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
       return;
     }
     
-    // In a real app, you would save the lead to the database here
-    toast({
-      title: "Lead Created",
-      description: "The lead has been successfully created."
-    });
-    
-    onSuccess?.();
+    createLead.mutate(formData);
   };
 
   return (
