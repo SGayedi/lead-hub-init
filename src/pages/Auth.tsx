@@ -64,14 +64,14 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen p-4 bg-gray-50">
+    <div className="flex justify-center items-center min-h-screen p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">CRM System</CardTitle>
