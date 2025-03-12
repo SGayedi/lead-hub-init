@@ -67,12 +67,13 @@ export interface Translation {
 export type TaskStatus = "pending" | "in_progress" | "completed" | "canceled";
 
 export type NotificationType = 
-  | "lead_high_priority"
-  | "lead_inactive"
-  | "lead_archived"
-  | "task_assigned"
-  | "task_due_soon"
-  | "meeting_reminder";
+  | 'lead_inactive'
+  | 'lead_archived'
+  | 'task_created'
+  | 'task_due_soon'
+  | 'task_overdue'
+  | 'meeting_scheduled'
+  | 'system_notification';
 
 export type EntityType = "lead" | "task" | "meeting" | "document";
 
@@ -82,11 +83,11 @@ export interface Notification {
   id: string;
   userId: string;
   title: string;
-  message: string;
+  content: string; 
   type: NotificationType;
-  read: boolean;
+  isRead: boolean;
   relatedEntityId?: string;
-  relatedEntityType?: EntityType;
+  relatedEntityType?: 'lead' | 'task' | 'meeting';
   createdAt: string;
   updatedAt: string;
 }

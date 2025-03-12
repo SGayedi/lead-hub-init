@@ -15,9 +15,10 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMeetings } from "@/hooks/useMeetings";
-import { MeetingType } from "@/types/crm";
+import { Meeting, MeetingType } from "@/types/crm";
 import { Spinner } from "@/components/Spinner";
 import { format } from "date-fns";
+import { MeetingDetailsDialog } from "@/components/meetings/MeetingDetailsDialog";
 
 // We'll create a simple meeting form for now
 const MeetingForm = ({ onClose }: { onClose: () => void }) => {
@@ -35,6 +36,7 @@ export default function Meetings() {
   const [typeFilter, setTypeFilter] = useState<MeetingType | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   
   const { meetings, isLoading } = useMeetings({
     type: typeFilter !== 'all' ? typeFilter : undefined,
@@ -69,6 +71,10 @@ export default function Meetings() {
       default:
         return type;
     }
+  };
+
+  const handleMeetingClick = (meeting: Meeting) => {
+    setSelectedMeeting(meeting);
   };
   
   return (
@@ -148,7 +154,11 @@ export default function Meetings() {
             ) : (
               <div className="space-y-4">
                 {meetings.map(meeting => (
-                  <Card key={meeting.id}>
+                  <Card 
+                    key={meeting.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleMeetingClick(meeting)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg">{meeting.title}</CardTitle>
@@ -184,7 +194,7 @@ export default function Meetings() {
                           <div className="text-sm text-muted-foreground mb-1">
                             Description
                           </div>
-                          <div className="text-sm">
+                          <div className="text-sm line-clamp-2">
                             {meeting.description}
                           </div>
                         </div>
@@ -204,6 +214,12 @@ export default function Meetings() {
           <MeetingForm onClose={() => setShowCreateDialog(false)} />
         </DialogContent>
       </Dialog>
+
+      <MeetingDetailsDialog 
+        meeting={selectedMeeting}
+        isOpen={!!selectedMeeting}
+        onClose={() => setSelectedMeeting(null)}
+      />
     </div>
   );
 }
