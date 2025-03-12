@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PlusCircle, Search, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,7 @@ export default function Leads() {
   };
   
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="animate-fade-in">
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
