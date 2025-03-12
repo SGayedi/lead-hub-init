@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PlusCircle, Search, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ import { LeadDetailsDialog } from "@/components/LeadDetailsDialog";
 
 export default function Leads() {
   const [filterStatus, setFilterStatus] = useState<LeadStatus | 'all'>('all');
-  const { leads, isLoading, searchTerm, setSearchTerm } = useLeads(filterStatus);
+  const { leads, isLoading, searchTerm, setSearchTerm, refetch } = useLeads(filterStatus);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   
@@ -64,6 +65,10 @@ export default function Leads() {
 
   const viewLeadDetails = (lead: Lead) => {
     setSelectedLead(lead);
+  };
+
+  const handleLeadUpdated = () => {
+    refetch();
   };
   
   return (
@@ -244,6 +249,7 @@ export default function Leads() {
         lead={selectedLead}
         isOpen={!!selectedLead}
         onClose={() => setSelectedLead(null)}
+        onLeadUpdated={handleLeadUpdated}
       />
     </div>
   );
