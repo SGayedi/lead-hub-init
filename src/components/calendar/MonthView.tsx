@@ -43,13 +43,17 @@ export function MonthView({
             className="rounded-md border"
             components={{
               Day: ({ date, ...props }) => (
-                <button {...props}>
+                <div 
+                  {...props} 
+                  className="flex items-center justify-center p-0"
+                  onClick={() => setSelectedDate(date)}
+                >
                   <CalendarDay 
                     date={date} 
                     meetings={meetings} 
-                    tasks={tasks} 
+                    tasks={tasks}
                   />
-                </button>
+                </div>
               ),
             }}
           />

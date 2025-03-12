@@ -6,9 +6,10 @@ interface CalendarDayProps {
   date: Date;
   meetings: Meeting[];
   tasks: Task[];
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
-export function CalendarDay({ date, meetings, tasks }: CalendarDayProps) {
+export function CalendarDay({ date, meetings, tasks, onClick }: CalendarDayProps) {
   const dayMeetings = meetings.filter(meeting => 
     isSameDay(new Date(meeting.startTime), date)
   );
@@ -20,7 +21,10 @@ export function CalendarDay({ date, meetings, tasks }: CalendarDayProps) {
   const hasEvents = dayMeetings.length > 0 || dayTasks.length > 0;
 
   return (
-    <div className="h-14 w-14 p-0 relative flex flex-col items-center justify-center">
+    <div 
+      className="h-14 w-14 p-0 relative flex flex-col items-center justify-center cursor-pointer"
+      onClick={onClick}
+    >
       <span>{date.getDate()}</span>
       {hasEvents && (
         <div className="absolute bottom-1 flex gap-1">
