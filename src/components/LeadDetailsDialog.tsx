@@ -157,9 +157,8 @@ export function LeadDetailsDialog({ lead, isOpen, onClose }: LeadDetailsDialogPr
             </div>
 
             <DocumentUploader 
-              entityId={lead.id} 
-              entityType="lead" 
-              allowMultiple={true}
+              relatedEntityId={lead.id} 
+              relatedEntityType="lead"
             />
 
             {isLoadingDocuments ? (
@@ -225,7 +224,10 @@ export function LeadDetailsDialog({ lead, isOpen, onClose }: LeadDetailsDialogPr
           </TabsContent>
 
           <TabsContent value="comments" className="mt-4">
-            <CommentSection entityId={lead.id} entityType="lead" />
+            <CommentSection 
+              relatedEntityId={lead.id} 
+              relatedEntityType="lead"
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>
