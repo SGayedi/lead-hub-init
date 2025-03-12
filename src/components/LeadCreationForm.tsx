@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,6 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -67,7 +65,6 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
       newErrors.name = "Name is required";
     }
     
-    // Core investor validation
     if (formData.priority === "high" && formData.inquiryType === "company") {
       if (formData.exportQuota && Number(formData.exportQuota) < 75) {
         newErrors.exportQuota = "Export quota must be at least 75% for core investors";
@@ -121,7 +118,6 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
     
     if (!validateForm()) return;
     
-    // Check if this is a core investor with insufficient data
     const isCoreInvestor = formData.priority === "high" && formData.inquiryType === "company";
     const hasInsufficientData = 
       !formData.exportQuota || 
@@ -135,7 +131,11 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
         action: {
           label: "Actions",
           onClick: () => {
-            // Action remains empty as it's handled by the buttons below
+            createLead.mutate({
+              ...formData,
+              status: "waiting_for_details"
+            });
+            toast.dismiss();
           },
         },
         description: (
@@ -146,7 +146,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
               onClick={() => {
                 createLead.mutate({
                   ...formData,
-                  status: "waiting_for_details"
+                  status: "waiting_for_approval"
                 });
                 toast.dismiss();
               }}
@@ -335,7 +335,11 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
       </div>
       
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onSuccess}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => onSuccess?.()}
+        >
           Cancel
         </Button>
         <Button type="submit">Create Lead</Button>
