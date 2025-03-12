@@ -87,16 +87,16 @@ export function DocumentUploader({
       if (onUpload) {
         await onUpload([file]);
       } else {
-        const result = await uploadDocument.mutateAsync({
+        const uploadResult = await uploadDocument.mutateAsync({
           file,
           relatedEntityId,
           relatedEntityType,
           existingDocumentId: versionDocument?.id
         });
         
-        // Only call onDocumentUploaded if the function exists and we have a result with an id
-        if (onDocumentUploaded && result && typeof result === 'object' && 'id' in result) {
-          onDocumentUploaded(result.id);
+        // Fix: Check if uploadResult exists, is an object, and has an id property before calling onDocumentUploaded
+        if (onDocumentUploaded && uploadResult && typeof uploadResult === 'object' && 'id' in uploadResult) {
+          onDocumentUploaded(uploadResult.id);
         }
       }
       

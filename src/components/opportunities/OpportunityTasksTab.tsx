@@ -21,8 +21,10 @@ export function OpportunityTasksTab({ opportunity }: OpportunityTasksTabProps) {
     isLoading, 
     error 
   } = useTasks({
-    relatedEntityId: opportunity.id,
-    relatedEntityType: "opportunity"
+    onlyRelatedTo: {
+      entityId: opportunity.id,
+      entityType: "opportunity"
+    }
   });
   
   if (isLoading) {
