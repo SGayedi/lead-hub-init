@@ -127,9 +127,15 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
       Number(formData.plotSize) < 1;
     
     if (isCoreInvestor && hasInsufficientData) {
-      toast({
-        description: "This lead doesn't meet core investor criteria. How would you like to proceed?",
-        action: (
+      toast("Core Investor Requirements", {
+        duration: 10000,
+        action: {
+          label: "Actions",
+          onClick: () => {
+            // Action remains empty as it's handled by the buttons below
+          },
+        },
+        description: (
           <div className="flex gap-2 mt-2">
             <Button 
               size="sm" 
