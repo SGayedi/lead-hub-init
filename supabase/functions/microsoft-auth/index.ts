@@ -1,0 +1,229 @@
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID")!;
+const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET")!;
+const REDIRECT_URI = Deno.env.get("REDIRECT_URI")!;
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const path = url.pathname.split('/').pop();
+
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Get auth token from header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid auth token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle different paths
+    if (path === 'authorize') {
+      // Generate Microsoft OAuth URL
+      const scope = encodeURIComponent('offline_access Mail.Read');
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_mode=query&scope=${scope}&state=${user.id}`;
+      
+      return new Response(
+        JSON.stringify({ url: authUrl }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } 
+    else if (path === 'callback') {
+      const { code, state, error } = await req.json();
+      
+      if (error || !code) {
+        return new Response(
+          JSON.stringify({ error: error || 'No code provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Exchange code for token
+      const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: MS_CLIENT_ID,
+          client_secret: MS_CLIENT_SECRET,
+          code,
+          redirect_uri: REDIRECT_URI,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenResponse.ok) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to exchange code for token', details: tokenData }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Store tokens in a secure table
+      const { error: insertError } = await supabase
+        .from('outlook_tokens')
+        .upsert({
+          user_id: user.id,
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+        });
+
+      if (insertError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to store token', details: insertError }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    else if (path === 'sync-emails') {
+      // Get Microsoft token
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('outlook_tokens')
+        .select('access_token, refresh_token, expires_at')
+        .eq('user_id', user.id)
+        .single();
+
+      if (tokenError || !tokenData) {
+        return new Response(
+          JSON.stringify({ error: 'No Microsoft token found', details: tokenError }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if token needs refresh
+      if (new Date(tokenData.expires_at) < new Date()) {
+        // Refresh token
+        const refreshResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            client_id: MS_CLIENT_ID,
+            client_secret: MS_CLIENT_SECRET,
+            refresh_token: tokenData.refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        const refreshData = await refreshResponse.json();
+        
+        if (!refreshResponse.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to refresh token', details: refreshData }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update token in database
+        await supabase
+          .from('outlook_tokens')
+          .update({
+            access_token: refreshData.access_token,
+            refresh_token: refreshData.refresh_token || tokenData.refresh_token,
+            expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
+          })
+          .eq('user_id', user.id);
+
+        tokenData.access_token = refreshData.access_token;
+      }
+
+      // Fetch emails from Microsoft Graph API
+      const emailsResponse = await fetch('https://graph.microsoft.com/v1.0/me/messages?$top=50&$orderby=receivedDateTime desc', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      if (!emailsResponse.ok) {
+        const errorData = await emailsResponse.json();
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch emails', details: errorData }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const emailsData = await emailsResponse.json();
+      const emails = emailsData.value;
+      
+      // Process and store emails
+      for (const email of emails) {
+        // Check if email already exists
+        const { data: existingEmail } = await supabase
+          .from('outlook_emails')
+          .select('id')
+          .eq('id', email.id)
+          .single();
+          
+        if (!existingEmail) {
+          // Insert new email
+          await supabase
+            .from('outlook_emails')
+            .insert({
+              id: email.id,
+              subject: email.subject || '(No Subject)',
+              sender_name: email.from?.emailAddress?.name || 'Unknown',
+              sender_email: email.from?.emailAddress?.address || 'unknown@example.com',
+              received_at: email.receivedDateTime,
+              body: email.bodyPreview || '',
+              read: email.isRead,
+              has_attachments: email.hasAttachments,
+              is_enquiry: false, // Default value, user will update manually
+            });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, count: emails.length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: 'Invalid endpoint' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

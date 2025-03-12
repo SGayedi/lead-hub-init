@@ -8,7 +8,10 @@ import { Layout } from "./components/Layout";
 import Leads from "./pages/Leads";
 import Settings from "./pages/Settings";
 import Enquiries from "./pages/Enquiries";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./hooks/useAuth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -18,15 +21,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Layout>
+        <AuthProvider>
           <Routes>
+            <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Navigate to="/leads" replace />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/enquiries" element={<Enquiries />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/leads" element={<Leads />} />
+              <Route path="/enquiries" element={<Enquiries />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Layout>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
