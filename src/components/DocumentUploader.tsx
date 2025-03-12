@@ -36,6 +36,7 @@ interface DocumentUploaderProps {
   onCancel?: () => void;
   acceptedFileTypes?: string[];
   maxFiles?: number;
+  onDocumentUploaded?: (documentId: string) => void;
 }
 
 export function DocumentUploader({ 
@@ -44,7 +45,8 @@ export function DocumentUploader({
   onUpload,
   onCancel,
   acceptedFileTypes,
-  maxFiles = 1
+  maxFiles = 1,
+  onDocumentUploaded
 }: DocumentUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -84,12 +86,16 @@ export function DocumentUploader({
       if (onUpload) {
         await onUpload([file]);
       } else {
-        await uploadDocument.mutateAsync({
+        const result = await uploadDocument.mutateAsync({
           file,
           relatedEntityId,
           relatedEntityType,
           existingDocumentId: versionDocument?.id
         });
+        
+        if (onDocumentUploaded && result?.id) {
+          onDocumentUploaded(result.id);
+        }
       }
       
       if (fileInputRef.current) {

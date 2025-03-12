@@ -1,12 +1,11 @@
+
 import { useState } from "react";
 import { useNdas } from "@/hooks/useNdas";
-import { useDocuments } from "@/hooks/useDocuments";
 import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CheckCircle, CircleEllipsis, Circle } from "lucide-react";
 import { NdaStatus, Opportunity } from "@/types/crm";
 import { format } from "date-fns";
 
@@ -15,13 +14,15 @@ interface OpportunityNdaTabProps {
 }
 
 export function OpportunityNdaTab({ opportunity }: OpportunityNdaTabProps) {
-  const { opportunityId } = opportunity;
+  const opportunityId = opportunity.id;
+  
   const {
     ndas,
     isLoading,
     issueNda,
     markNdaSigned,
     markNdaCounterSigned,
+    markNdaCompleted,
     uploadSignedNda,
     selectedNda,
     setSelectedNda

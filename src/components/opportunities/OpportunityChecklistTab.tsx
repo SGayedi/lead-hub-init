@@ -1,65 +1,75 @@
+
 import { useState } from "react";
-import { format } from "date-fns";
 import { useDueDiligenceChecklists } from "@/hooks/useDueDiligenceChecklists";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/Spinner";
-import { CheckCircle, CircleEllipsis, Circle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getStatusStyle } from "@/lib/utils";
-import { ChecklistItemStatus, Opportunity } from "@/types/crm";
+import { CheckCircle, Circle, AlertCircle } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 interface OpportunityChecklistTabProps {
-  opportunity: Opportunity;
+  opportunityId: string;
 }
 
-export function OpportunityChecklistTab({ opportunity }: OpportunityChecklistTabProps) {
-  const [editingNotes, setEditingNotes] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
+export function OpportunityChecklistTab({ opportunityId }: OpportunityChecklistTabProps) {
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [noteDialog, setNoteDialog] = useState(false);
+  const [newNote, setNewNote] = useState("");
   
-  const { 
-    checklist, 
-    checklistItems, 
-    isLoading, 
+  const {
+    checklist,
+    checklistItems,
+    isLoading,
     updateChecklistItemStatus,
     updateChecklistItemNotes,
     assignChecklistItem
-  } = useDueDiligenceChecklists(opportunity.id);
+  } = useDueDiligenceChecklists(opportunityId);
   
-  const handleSaveNotes = async (itemId: string) => {
-    if (editingNotes === itemId) {
-      await updateChecklistItemNotes.mutateAsync({
-        itemId,
-        notes
-      });
-      setNotes("");
-      setEditingNotes(null);
-    }
+  const handleStatusChange = (itemId: string, status: string) => {
+    updateChecklistItemStatus.mutate({ 
+      itemId, 
+      status: status as any 
+    });
   };
   
-  const renderStatusIcon = (status: ChecklistItemStatus) => {
+  const handleOpenNoteDialog = (itemId: string, currentNote: string = "") => {
+    setSelectedItemId(itemId);
+    setNewNote(currentNote);
+    setNoteDialog(true);
+  };
+  
+  const handleSaveNote = () => {
+    if (selectedItemId) {
+      updateChecklistItemNotes.mutate({ 
+        itemId: selectedItemId, 
+        notes: newNote 
+      });
+    }
+    setNoteDialog(false);
+  };
+  
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case "not_started":
-        return <Circle className="h-5 w-5 text-gray-400" />;
-      case "in_progress":
-        return <CircleEllipsis className="h-5 w-5 text-blue-500" />;
       case "completed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      default:
-        return <Circle className="h-5 w-5 text-gray-400" />;
-    }
-  };
-  
-  const getStatusBadge = (status: ChecklistItemStatus) => {
-    switch (status) {
-      case "not_started":
-        return <Badge variant="outline" className="bg-gray-100">Not Started</Badge>;
       case "in_progress":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-700">In Progress</Badge>;
-      case "completed":
-        return <Badge variant="outline" className="bg-green-100 text-green-700">Completed</Badge>;
+        return <AlertCircle className="h-5 w-5 text-amber-500" />;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Circle className="h-5 w-5 text-gray-300" />;
     }
   };
   
@@ -71,108 +81,121 @@ export function OpportunityChecklistTab({ opportunity }: OpportunityChecklistTab
     );
   }
   
+  if (!checklist) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-4">
+        <p className="text-center text-muted-foreground">
+          No due diligence checklist has been created for this opportunity yet.
+        </p>
+      </div>
+    );
+  }
+  
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-2">{checklist.name}</h3>
       </div>
       
-      {checklistItems.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          No checklist items available.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {checklistItems.map((item) => (
-            <div key={item.id} className="border rounded-md p-4">
+      <div className="space-y-4">
+        {checklistItems.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4">
+            No checklist items found
+          </p>
+        ) : (
+          checklistItems.map((item) => (
+            <div key={item.id} className="border rounded-md p-3 bg-card">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => {
-                        const newStatus = 
-                          item.status === "not_started" ? "in_progress" : 
-                          item.status === "in_progress" ? "completed" : 
-                          "not_started";
-                        
-                        updateChecklistItemStatus.mutate({
-                          itemId: item.id,
-                          status: newStatus as ChecklistItemStatus
-                        });
-                      }}
-                    >
-                      {renderStatusIcon(item.status as ChecklistItemStatus)}
-                    </Button>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{item.name}</h4>
-                      {getStatusBadge(item.status as ChecklistItemStatus)}
-                    </div>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                    )}
-                    {item.notes && editingNotes !== item.id && (
-                      <div className="mt-2 text-sm border-l-2 border-blue-300 pl-2">
-                        {item.notes}
-                      </div>
-                    )}
-                    {item.due_date && (
-                      <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Due by {format(new Date(item.due_date), "PPP")}
-                      </div>
-                    )}
-                    {editingNotes === item.id && (
-                      <div className="mt-2">
-                        <Textarea
-                          className="text-sm min-h-[80px]"
-                          placeholder="Add notes..."
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                        />
-                        <div className="flex justify-end mt-2 space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setEditingNotes(null);
-                              setNotes("");
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveNotes(item.id)}
-                          >
-                            Save Notes
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {editingNotes !== item.id && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
+                  <div 
+                    className="mt-1 cursor-pointer"
                     onClick={() => {
-                      setEditingNotes(item.id);
-                      setNotes(item.notes || "");
+                      const nextStatus = 
+                        item.status === "not_started" ? "in_progress" :
+                        item.status === "in_progress" ? "completed" : "not_started";
+                      
+                      handleStatusChange(item.id, nextStatus);
                     }}
                   >
-                    Add Notes
-                  </Button>
-                )}
+                    {getStatusIcon(item.status)}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-sm">{item.name}</h4>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {item.description}
+                      </p>
+                    )}
+                    
+                    {item.notes && (
+                      <div className="mt-2 p-2 bg-muted rounded-sm text-sm">
+                        <p className="font-medium">Notes:</p>
+                        <p className="whitespace-pre-wrap">{item.notes}</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleOpenNoteDialog(item.id, item.notes || "")}
+                      >
+                        {item.notes ? "Edit Notes" : "Add Notes"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Select 
+                    value={item.status}
+                    onValueChange={(value) => handleStatusChange(item.id, value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_started">Not Started</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
+      
+      <Dialog open={noteDialog} onOpenChange={setNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Notes</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Enter notes about this task..."
+              rows={6}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setNoteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNote}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,100 +1,78 @@
-import { useState } from "react";
-import { 
-  Dialog,
-  DialogContent
-} from "@/components/ui/dialog";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, MessageSquare, CalendarClock, ClipboardCheck, FileSignature, BarChart2 } from "lucide-react";
-import { Opportunity } from "@/types/crm";
-import { CommentSection } from "@/components/CommentSection";
-import { OpportunityDialogHeader } from "./OpportunityDialogHeader";
 import { OpportunityDetailsTab } from "./OpportunityDetailsTab";
+import { OpportunityChecklistTab } from "./OpportunityChecklistTab";
 import { OpportunityNdaTab } from "./OpportunityNdaTab";
 import { OpportunityBusinessPlanTab } from "./OpportunityBusinessPlanTab";
-import { OpportunityChecklistTab } from "./OpportunityChecklistTab";
-import { OpportunityDocumentsTab } from "./OpportunityDocumentsTab";
 import { OpportunityTasksTab } from "./OpportunityTasksTab";
+import { OpportunityDocumentsTab } from "./OpportunityDocumentsTab";
+import { OpportunityDialogHeader } from "./OpportunityDialogHeader";
+import { Opportunity } from "@/types/crm";
 
 interface OpportunityDetailsDialogProps {
-  opportunity: Opportunity | null;
-  isOpen: boolean;
+  opportunity: Opportunity;
   onClose: () => void;
-  onOpportunityUpdated?: () => void;
 }
 
 export function OpportunityDetailsDialog({ 
   opportunity, 
-  isOpen, 
-  onClose,
-  onOpportunityUpdated
+  onClose 
 }: OpportunityDetailsDialogProps) {
-  const [activeTab, setActiveTab] = useState("details");
-
-  if (!opportunity) return null;
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <OpportunityDialogHeader
-          opportunity={opportunity}
-          onUpdated={onOpportunityUpdated}
-        />
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid grid-cols-6">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="nda" className="flex items-center gap-1">
-              <FileSignature className="h-4 w-4" />
-              NDA
-            </TabsTrigger>
-            <TabsTrigger value="business-plan" className="flex items-center gap-1">
-              <BarChart2 className="h-4 w-4" />
-              Business Plan
-            </TabsTrigger>
-            <TabsTrigger value="checklist" className="flex items-center gap-1">
-              <ClipboardCheck className="h-4 w-4" />
-              Checklist
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              Documents
-            </TabsTrigger>
-            <TabsTrigger value="comments" className="flex items-center gap-1">
-              <MessageSquare className="h-4 w-4" />
-              Comments
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-4 mt-4">
-            <OpportunityDetailsTab 
-              opportunity={opportunity}
-            />
+    <div className="space-y-4 max-h-[calc(100vh-40px)]">
+      <OpportunityDialogHeader 
+        opportunity={opportunity}
+        onClose={onClose}
+      />
+      
+      <Tabs defaultValue="details" className="flex flex-col h-full">
+        <TabsList className="w-full justify-start border-b pb-0 gap-2 bg-transparent">
+          <TabsTrigger value="details" className="data-[state=active]:bg-background">
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="checklist" className="data-[state=active]:bg-background">
+            Due Diligence
+          </TabsTrigger>
+          <TabsTrigger value="nda" className="data-[state=active]:bg-background">
+            NDA
+          </TabsTrigger>
+          <TabsTrigger value="business-plan" className="data-[state=active]:bg-background">
+            Business Plan
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-background">
+            Documents
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-background">
+            Tasks
+          </TabsTrigger>
+        </TabsList>
+        
+        <div className="bg-card rounded-md p-4 overflow-y-auto flex-1">
+          <TabsContent value="details" className="mt-0">
+            <OpportunityDetailsTab opportunity={opportunity} />
           </TabsContent>
-
-          <TabsContent value="nda" className="mt-4">
+          
+          <TabsContent value="checklist" className="mt-0">
+            <OpportunityChecklistTab opportunityId={opportunity.id} />
+          </TabsContent>
+          
+          <TabsContent value="nda" className="mt-0">
             <OpportunityNdaTab opportunity={opportunity} />
           </TabsContent>
-
-          <TabsContent value="business-plan" className="mt-4">
+          
+          <TabsContent value="business-plan" className="mt-0">
             <OpportunityBusinessPlanTab opportunityId={opportunity.id} />
           </TabsContent>
-
-          <TabsContent value="checklist" className="mt-4">
-            <OpportunityChecklistTab opportunity={opportunity} />
+          
+          <TabsContent value="documents" className="mt-0">
+            <OpportunityDocumentsTab opportunityId={opportunity.id} />
           </TabsContent>
-
-          <TabsContent value="documents" className="mt-4">
-            <OpportunityDocumentsTab opportunity={opportunity} />
+          
+          <TabsContent value="tasks" className="mt-0">
+            <OpportunityTasksTab opportunityId={opportunity.id} />
           </TabsContent>
-
-          <TabsContent value="comments" className="mt-4">
-            <CommentSection 
-              relatedEntityId={opportunity.id} 
-              relatedEntityType="opportunity"
-            />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Tabs>
+    </div>
   );
 }
