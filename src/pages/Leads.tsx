@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PlusCircle, Search, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -89,7 +88,7 @@ export default function Leads() {
         </Button>
       </header>
       
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
+      <div className="bg-card text-card-foreground p-6 rounded-lg shadow-sm border">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
