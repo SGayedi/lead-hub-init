@@ -56,6 +56,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Special check to directly log environment variables on request
+  if (new URL(req.url).pathname.includes('/debug-env')) {
+    console.log("Debug environment request received");
+    return new Response(
+      JSON.stringify({
+        message: "Environment variable check",
+        clientId: GMAIL_CLIENT_ID ? "Present" : "Missing",
+        clientSecret: GMAIL_CLIENT_SECRET ? "Present" : "Missing",
+        redirectUri: REDIRECT_URI,
+        supabaseUrl: SUPABASE_URL ? "Present" : "Missing",
+        supabaseKey: SUPABASE_ANON_KEY ? "Present" : "Missing"
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -129,6 +145,9 @@ serve(async (req) => {
     // Validate required environment variables
     if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET) {
       console.error("Gmail OAuth configuration is incomplete");
+      console.error(`GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID || "MISSING"}`);
+      console.error(`GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET || "MISSING"}`);
+      
       return new Response(
         JSON.stringify({ 
           error: 'Gmail OAuth configuration is incomplete', 
