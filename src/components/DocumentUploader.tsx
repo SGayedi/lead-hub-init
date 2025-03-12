@@ -32,12 +32,20 @@ import { Badge } from './ui/badge';
 
 interface DocumentUploaderProps {
   relatedEntityId: string;
-  relatedEntityType: "lead" | "meeting";
+  relatedEntityType: "lead" | "meeting" | "opportunity";
+  onUpload?: (files: File[]) => Promise<void>;
+  onCancel?: () => void;
+  acceptedFileTypes?: string[];
+  maxFiles?: number;
 }
 
 export function DocumentUploader({ 
   relatedEntityId, 
-  relatedEntityType 
+  relatedEntityType,
+  onUpload,
+  onCancel,
+  acceptedFileTypes,
+  maxFiles = 1
 }: DocumentUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -75,12 +83,16 @@ export function DocumentUploader({
     setUploadingFile(true);
     
     try {
-      await uploadDocument.mutateAsync({
-        file,
-        relatedEntityId,
-        relatedEntityType,
-        existingDocumentId: versionDocument?.id
-      });
+      if (onUpload) {
+        await onUpload([file]);
+      } else {
+        await uploadDocument.mutateAsync({
+          file,
+          relatedEntityId,
+          relatedEntityType,
+          existingDocumentId: versionDocument?.id
+        });
+      }
       
       // Reset file input and state
       if (fileInputRef.current) {
@@ -136,6 +148,13 @@ export function DocumentUploader({
   const handleUploadNewVersion = (document: any) => {
     setVersionDocument(document);
     fileInputRef.current?.click();
+  };
+  
+  const handleCancel = () => {
+    setVersionDocument(null);
+    if (onCancel) {
+      onCancel();
+    }
   };
   
   const renderFilePreview = () => {
@@ -249,6 +268,7 @@ export function DocumentUploader({
               className="hidden"
               ref={fileInputRef}
               onChange={handleFileChange}
+              accept={acceptedFileTypes?.join(',') || undefined}
             />
             <Button 
               variant="outline" 
@@ -263,12 +283,12 @@ export function DocumentUploader({
               )}
               {versionDocument ? `Upload New Version of ${versionDocument.name}` : 'Upload Document'}
             </Button>
-            {versionDocument && (
+            {(versionDocument || onCancel) && (
               <Button 
                 variant="ghost" 
                 size="sm"
                 className="mt-2"
-                onClick={() => setVersionDocument(null)}
+                onClick={handleCancel}
               >
                 Cancel
               </Button>

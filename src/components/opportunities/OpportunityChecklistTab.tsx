@@ -1,315 +1,201 @@
 
-import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  CheckSquare, 
-  Square, 
-  Clock, 
-  CheckCircle,
-  XCircle,
-  Calendar,
-  User
-} from "lucide-react";
-import { useDueDiligenceChecklists } from "@/hooks/useDueDiligenceChecklists";
-import { Spinner } from "@/components/Spinner";
-import { 
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ChecklistItemStatus } from "@/types/crm";
+import React, { useState } from 'react';
+import { Opportunity, ChecklistItemStatus, DueDiligenceChecklistItem } from '@/types/crm';
+import { useDueDiligenceChecklists } from '@/hooks/useDueDiligenceChecklists';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/Spinner';
+import { getStatusStyle } from '@/lib/utils';
+import { format } from 'date-fns';
+import { CheckCircle2, CircleDashed, CircleDot, ClipboardList, Clock, User } from 'lucide-react';
 
 interface OpportunityChecklistTabProps {
-  opportunityId: string;
+  opportunity: Opportunity;
 }
 
-export function OpportunityChecklistTab({ opportunityId }: OpportunityChecklistTabProps) {
-  const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [showNotesDialog, setShowNotesDialog] = useState(false);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [itemNotes, setItemNotes] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  
+export function OpportunityChecklistTab({ opportunity }: OpportunityChecklistTabProps) {
   const { 
-    checklist,
-    checklistItems,
+    checklists, 
+    checklistItems, 
     isLoading,
     updateChecklistItemStatus,
-    assignChecklistItem
-  } = useDueDiligenceChecklists(opportunityId);
-
+    updateChecklistItemNotes
+  } = useDueDiligenceChecklists(opportunity.id);
+  
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  
   const handleStatusChange = async (itemId: string, status: ChecklistItemStatus) => {
     await updateChecklistItemStatus.mutateAsync({ itemId, status });
   };
-
+  
   const handleSaveNotes = async () => {
-    if (activeItem) {
-      await updateChecklistItemStatus.mutateAsync({ 
-        itemId: activeItem, 
-        notes: itemNotes 
-      });
-      setShowNotesDialog(false);
-      setActiveItem(null);
-      setItemNotes("");
-    }
+    if (!selectedItemId) return;
+    
+    await updateChecklistItemNotes.mutateAsync({ 
+      itemId: selectedItemId,
+      status: checklistItems.find(item => item.id === selectedItemId)?.status || 'not_started',
+      notes
+    });
+    
+    setEditingNotes(false);
   };
-
-  const handleAssign = async () => {
-    if (activeItem) {
-      await assignChecklistItem.mutateAsync({ 
-        itemId: activeItem, 
-        assignedTo, 
-        dueDate: dueDate || undefined 
-      });
-      setShowAssignDialog(false);
-      setActiveItem(null);
-      setAssignedTo("");
-      setDueDate("");
-    }
-  };
-
-  const openNotesDialog = (itemId: string, notes?: string) => {
-    setActiveItem(itemId);
-    setItemNotes(notes || "");
-    setShowNotesDialog(true);
-  };
-
-  const openAssignDialog = (itemId: string, currentAssignedTo?: string, currentDueDate?: string) => {
-    setActiveItem(itemId);
-    setAssignedTo(currentAssignedTo || "");
-    setDueDate(currentDueDate ? new Date(currentDueDate).toISOString().split('T')[0] : "");
-    setShowAssignDialog(true);
-  };
-
+  
   const getStatusIcon = (status: ChecklistItemStatus) => {
     switch (status) {
-      case "completed":
-        return <CheckSquare className="h-5 w-5 text-green-600" />;
-      case "in_progress":
-        return <Clock className="h-5 w-5 text-amber-600" />;
-      case "not_started":
+      case 'not_started':
+        return <CircleDashed className="h-5 w-5 text-muted-foreground" />;
+      case 'in_progress':
+        return <CircleDot className="h-5 w-5 text-blue-500" />;
+      case 'completed':
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
       default:
-        return <Square className="h-5 w-5 text-gray-400" />;
+        return <CircleDashed className="h-5 w-5 text-muted-foreground" />;
     }
   };
-
-  const getStatusBadge = (status: ChecklistItemStatus) => {
-    switch (status) {
-      case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
-      case "in_progress":
-        return <Badge className="bg-amber-100 text-amber-800">In Progress</Badge>;
-      case "not_started":
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">Not Started</Badge>;
-    }
-  };
-
+  
   if (isLoading) {
-    return <Spinner />;
-  }
-
-  if (!checklist) {
     return (
-      <div className="p-8 text-center">
-        <h3 className="text-lg font-medium mb-2">No checklist found</h3>
-        <p className="text-muted-foreground">
-          There is no due diligence checklist associated with this opportunity.
-        </p>
+      <div className="flex items-center justify-center py-12">
+        <Spinner />
       </div>
     );
   }
-
+  
+  if (!checklists.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No checklists found for this opportunity.</p>
+      </div>
+    );
+  }
+  
+  const checklist = checklists[0]; // Use the first checklist
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>{checklist.name}</CardTitle>
-          <CardDescription>
-            Track and manage the due diligence process
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {checklistItems.length === 0 ? (
-              <div className="p-4 text-center">
-                <p>No checklist items found.</p>
-              </div>
-            ) : (
-              checklistItems.map((item) => (
-                <Card key={item.id} className="overflow-hidden">
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
-                      <button 
-                        onClick={() => {
-                          const nextStatus = item.status === "not_started" 
-                            ? "in_progress" 
-                            : item.status === "in_progress" 
-                              ? "completed" 
-                              : "not_started";
-                          handleStatusChange(item.id, nextStatus);
-                        }}
-                        className="mt-1"
-                      >
-                        {getStatusIcon(item.status)}
-                      </button>
-                      <div className="flex-1">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between">
-                          <div>
-                            <h4 className="font-medium text-base">{item.name}</h4>
-                            {item.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {item.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="mt-2 md:mt-0">
-                            {getStatusBadge(item.status)}
-                          </div>
-                        </div>
-                        
-                        {(item.assigned_to || item.due_date) && (
-                          <div className="mt-3 flex flex-wrap gap-3">
-                            {item.assigned_to && (
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <User className="h-3.5 w-3.5 mr-1" />
-                                Assigned to: {item.assigned_to}
-                              </div>
-                            )}
-                            {item.due_date && (
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Calendar className="h-3.5 w-3.5 mr-1" />
-                                Due: {new Date(item.due_date).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {item.notes && (
-                          <div className="mt-3 bg-gray-50 p-3 rounded-md">
-                            <p className="text-sm">{item.notes}</p>
-                          </div>
-                        )}
-                        
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openNotesDialog(item.id, item.notes)}
-                          >
-                            Add Notes
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openAssignDialog(item.id, item.assigned_to, item.due_date)}
-                          >
-                            Assign
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusChange(item.id, "not_started")}
-                            disabled={item.status === "not_started"}
-                          >
-                            Mark Not Started
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusChange(item.id, "in_progress")}
-                            disabled={item.status === "in_progress"}
-                          >
-                            Mark In Progress
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusChange(item.id, "completed")}
-                            disabled={item.status === "completed"}
-                          >
-                            Mark Completed
-                          </Button>
-                        </div>
-                      </div>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {checklistItems.map((item) => (
+              <div 
+                key={item.id}
+                className={`p-4 hover:bg-muted transition-colors ${selectedItemId === item.id ? 'bg-muted' : ''}`}
+                onClick={() => {
+                  setSelectedItemId(item.id);
+                  setNotes(item.notes || '');
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(item.status)}
+                    <div>
+                      <h3 className="font-medium">{item.name}</h3>
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                      )}
                     </div>
                   </div>
-                </Card>
-              ))
-            )}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={item.status === 'not_started' ? 'outline' : 'ghost'}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(item.id, 'not_started');
+                      }}
+                    >
+                      Not Started
+                    </Button>
+                    <Button
+                      variant={item.status === 'in_progress' ? 'outline' : 'ghost'}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(item.id, 'in_progress');
+                      }}
+                    >
+                      In Progress
+                    </Button>
+                    <Button
+                      variant={item.status === 'completed' ? 'outline' : 'ghost'}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(item.id, 'completed');
+                      }}
+                    >
+                      Completed
+                    </Button>
+                  </div>
+                </div>
+                
+                {selectedItemId === item.id && (
+                  <div className="mt-4 pt-4 border-t">
+                    {item.assigned_to && (
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <User className="h-3 w-3 mr-1" />
+                        <span>Assigned to: {item.assigned_to}</span>
+                      </div>
+                    )}
+                    
+                    {item.due_date && (
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <Clock className="h-3 w-3 mr-1" />
+                        <span>Due: {format(new Date(item.due_date), 'PPp')}</span>
+                      </div>
+                    )}
+                    
+                    <div className="mt-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium">Notes</h4>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setEditingNotes(!editingNotes)}
+                        >
+                          {editingNotes ? 'Cancel' : 'Edit'}
+                        </Button>
+                      </div>
+                      
+                      {editingNotes ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows={4}
+                          />
+                          <div className="flex justify-end">
+                            <Button 
+                              size="sm"
+                              onClick={handleSaveNotes}
+                              disabled={updateChecklistItemNotes.isPending}
+                            >
+                              {updateChecklistItemNotes.isPending && <Spinner className="mr-2" />}
+                              Save Notes
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">
+                          {item.notes || 'No notes provided.'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Notes</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              placeholder="Enter notes for this checklist item..."
-              value={itemNotes}
-              onChange={(e) => setItemNotes(e.target.value)}
-              className="min-h-[150px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveNotes}>Save Notes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Checklist Item</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label htmlFor="assigned-to">Assign To</Label>
-              <Input
-                id="assigned-to"
-                placeholder="Enter user id or name"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="due-date">Due Date</Label>
-              <Input
-                id="due-date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAssign}>Save Assignment</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

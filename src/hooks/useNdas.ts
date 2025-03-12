@@ -2,17 +2,15 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Nda, NdaStatus } from '@/types/crm';
+import { Nda, NdaStatus, Document } from '@/types/crm';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { useDocuments } from './useDocuments';
 
-// Convert database NDA to frontend Nda type
 const convertDbNdaToNda = (dbNda: any): Nda => ({
   id: dbNda.id,
   opportunity_id: dbNda.opportunity_id,
   version: dbNda.version,
-  status: dbNda.status,
+  status: dbNda.status as NdaStatus,
   document_id: dbNda.document_id,
   issued_by: dbNda.issued_by,
   issued_at: dbNda.issued_at,
@@ -23,14 +21,16 @@ const convertDbNdaToNda = (dbNda: any): Nda => ({
   updated_at: dbNda.updated_at
 });
 
-export function useNdas(opportunityId: string) {
+export function useNdas(opportunityId?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { uploadDocument } = useDocuments();
+  const [selectedNda, setSelectedNda] = useState<Nda | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['ndas', opportunityId],
+    queryKey: ['ndas', opportunityId, user?.id],
     queryFn: async () => {
+      if (!user || !opportunityId) return [];
+      
       const { data, error } = await supabase
         .from('ndas')
         .select('*')
@@ -41,117 +41,91 @@ export function useNdas(opportunityId: string) {
       
       return data.map(convertDbNdaToNda);
     },
-    enabled: !!opportunityId
+    enabled: !!user && !!opportunityId
   });
 
-  const issueNda = useMutation({
-    mutationFn: async ({ opportunityId, file }: { opportunityId: string, file: File }) => {
+  const createNda = useMutation({
+    mutationFn: async ({ 
+      opportunity_id, 
+      document_id,
+      status = 'issued'
+    }: { 
+      opportunity_id: string;
+      document_id?: string;
+      status?: NdaStatus;
+    }) => {
       if (!user) throw new Error('User not authenticated');
       
-      // Get the latest version
-      const { data: latestNda, error: ndaError } = await supabase
+      const version = data && data.length > 0 ? data[0].version + 1 : 1;
+      
+      const { data: newNda, error } = await supabase
         .from('ndas')
-        .select('version')
-        .eq('opportunity_id', opportunityId)
-        .order('version', { ascending: false })
-        .limit(1);
-      
-      const newVersion = latestNda && latestNda.length > 0 ? latestNda[0].version + 1 : 1;
-      
-      // Upload document
-      const documentUploadResult = await uploadDocument.mutateAsync({
-        file, 
-        relatedEntityId: opportunityId, 
-        relatedEntityType: 'lead'
-      });
-      
-      // Create NDA record
-      const { data, error } = await supabase
-        .from('ndas')
-        .insert([{
-          opportunity_id: opportunityId,
-          version: newVersion,
-          status: 'issued',
-          document_id: documentUploadResult,
+        .insert({
+          opportunity_id,
+          version,
+          status,
+          document_id,
           issued_by: user.id,
           issued_at: new Date().toISOString()
-        }])
-        .select();
+        })
+        .select()
+        .single();
       
       if (error) throw error;
       
-      // Update opportunity NDA status
-      await supabase
-        .from('opportunities')
-        .update({ nda_status: 'issued' })
-        .eq('id', opportunityId);
-      
-      return data[0];
+      return newNda;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ndas'] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      toast.success('NDA issued successfully');
+      toast.success('NDA created successfully');
     },
     onError: (error) => {
-      console.error('Error issuing NDA:', error);
-      toast.error('Failed to issue NDA');
+      console.error('Error creating NDA:', error);
+      toast.error(`Failed to create NDA: ${error.message}`);
     }
   });
-
+  
   const updateNdaStatus = useMutation({
-    mutationFn: async ({ ndaId, status, file }: { ndaId: string, status: NdaStatus, file?: File }) => {
+    mutationFn: async ({ 
+      ndaId, 
+      status 
+    }: { 
+      ndaId: string; 
+      status: NdaStatus;
+    }) => {
       if (!user) throw new Error('User not authenticated');
-      
-      const nda = data?.find(n => n.id === ndaId);
-      if (!nda) throw new Error('NDA not found');
       
       const updateData: any = { status };
       
-      // Set appropriate timestamp based on status
       if (status === 'signed_by_investor') {
         updateData.signed_at = new Date().toISOString();
-        
-        // If a signed document was uploaded
-        if (file) {
-          const documentId = await uploadDocument.mutateAsync({
-            file,
-            relatedEntityId: nda.opportunity_id,
-            relatedEntityType: 'lead',
-            existingDocumentId: nda.document_id
-          });
-          updateData.document_id = documentId;
-        }
       } else if (status === 'counter_signed') {
         updateData.countersigned_at = new Date().toISOString();
-        
-        // If a countersigned document was uploaded
-        if (file) {
-          const documentId = await uploadDocument.mutateAsync({
-            file,
-            relatedEntityId: nda.opportunity_id,
-            relatedEntityType: 'lead',
-            existingDocumentId: nda.document_id
-          });
-          updateData.document_id = documentId;
-        }
       } else if (status === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
       
-      // Update NDA record
-      const { error } = await supabase
+      const { data: updatedNda, error } = await supabase
         .from('ndas')
         .update(updateData)
-        .eq('id', ndaId);
+        .eq('id', ndaId)
+        .select()
+        .single();
       
       if (error) throw error;
       
-      // Update opportunity NDA status
-      await supabase
-        .from('opportunities')
-        .update({ nda_status: status })
-        .eq('id', nda.opportunity_id);
+      // Also update the opportunity status
+      if (opportunityId) {
+        const { error: oppError } = await supabase
+          .from('opportunities')
+          .update({ nda_status: status })
+          .eq('id', opportunityId);
+        
+        if (oppError) throw oppError;
+      }
+      
+      return updatedNda;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ndas'] });
@@ -160,16 +134,109 @@ export function useNdas(opportunityId: string) {
     },
     onError: (error) => {
       console.error('Error updating NDA status:', error);
-      toast.error('Failed to update NDA status');
+      toast.error(`Failed to update NDA status: ${error.message}`);
     }
   });
-
+  
+  const uploadNdaDocument = useMutation({
+    mutationFn: async ({ 
+      file, 
+      opportunity_id,
+      status = 'issued'
+    }: { 
+      file: File; 
+      opportunity_id: string;
+      status?: NdaStatus;
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // 1. Upload file to storage
+      const filePath = `opportunities/${opportunity_id}/ndas/${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // 2. Create document record
+      const { data: documentData, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.id,
+          related_entity_id: opportunity_id,
+          related_entity_type: 'opportunity',
+          version: 1
+        })
+        .select()
+        .single();
+      
+      if (docError) {
+        // If document creation fails, try to delete the uploaded file
+        await supabase.storage.from('documents').remove([filePath]);
+        throw docError;
+      }
+      
+      // 3. Create or update NDA
+      const version = data && data.length > 0 ? data[0].version + 1 : 1;
+      
+      const { data: ndaData, error: ndaError } = await supabase
+        .from('ndas')
+        .insert({
+          opportunity_id,
+          version,
+          status,
+          document_id: documentData.id,
+          issued_by: user.id,
+          issued_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (ndaError) {
+        // If NDA creation fails, try to clean up
+        await supabase.from('documents').delete().eq('id', documentData.id);
+        await supabase.storage.from('documents').remove([filePath]);
+        throw ndaError;
+      }
+      
+      // 4. Update opportunity status
+      const { error: oppError } = await supabase
+        .from('opportunities')
+        .update({
+          nda_status: status
+        })
+        .eq('id', opportunity_id);
+      
+      if (oppError) throw oppError;
+      
+      return ndaData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ndas'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      toast.success('NDA uploaded successfully');
+    },
+    onError: (error) => {
+      console.error('Error uploading NDA:', error);
+      toast.error(`Failed to upload NDA: ${error.message}`);
+    }
+  });
+  
   return {
     ndas: data || [],
     isLoading,
     error,
     refetch,
-    issueNda,
-    updateNdaStatus
+    createNda,
+    updateNdaStatus,
+    uploadNdaDocument,
+    selectedNda,
+    setSelectedNda
   };
 }

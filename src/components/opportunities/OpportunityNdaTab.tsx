@@ -1,267 +1,393 @@
 
-import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  FileSignature, 
-  Upload, 
-  Download, 
-  Clock, 
-  CheckCircle,
-  XCircle,
-  FileCheck
-} from "lucide-react";
-import { useNdas } from "@/hooks/useNdas";
-import { useDocuments } from "@/hooks/useDocuments";
-import { DocumentUploader } from "@/components/DocumentUploader";
-import { Spinner } from "@/components/Spinner";
-import { NdaStatus } from "@/types/crm";
+import React, { useState } from 'react';
+import { Opportunity, Nda, NdaStatus } from '@/types/crm';
+import { useNdas } from '@/hooks/useNdas';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useDocuments } from '@/hooks/useDocuments';
+import { Spinner } from '@/components/Spinner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DocumentUploader } from '@/components/DocumentUploader';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { FileText, Upload, CheckCircle, AlertTriangle, Clock, Download, Eye, History } from 'lucide-react';
 
 interface OpportunityNdaTabProps {
-  opportunityId: string;
+  opportunity: Opportunity;
 }
 
-export function OpportunityNdaTab({ opportunityId }: OpportunityNdaTabProps) {
-  const [showUploader, setShowUploader] = useState(false);
-  const [uploadType, setUploadType] = useState<"issue" | "signed" | "countersigned">("issue");
-  
+export function OpportunityNdaTab({ opportunity }: OpportunityNdaTabProps) {
   const { 
     ndas, 
     isLoading, 
-    issueNda, 
+    uploadNdaDocument, 
     updateNdaStatus 
-  } = useNdas(opportunityId);
+  } = useNdas(opportunity.id);
   
-  const { 
-    getDocumentUrl,
-    previewDocumentVersion,
-    previewUrl,
-    previewDocument,
-    clearPreview
-  } = useDocuments();
-
-  const formatStatus = (status: string) => {
-    return status
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
+  const { getDocumentUrl } = useDocuments({
+    relatedEntityId: opportunity.id,
+    relatedEntityType: 'opportunity'
+  });
+  
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [selectedNda, setSelectedNda] = useState<Nda | null>(null);
+  const [updating, setUpdating] = useState(false);
+  
   const handleUpload = async (files: File[]) => {
-    if (files.length === 0) return;
-    
-    const file = files[0];
+    if (!files.length) return;
     
     try {
-      if (uploadType === "issue") {
-        await issueNda.mutateAsync({ opportunityId, file });
-      } else if (uploadType === "signed" && ndas.length > 0) {
-        await updateNdaStatus.mutateAsync({ 
-          ndaId: ndas[0].id, 
-          status: "signed_by_investor", 
-          file 
-        });
-      } else if (uploadType === "countersigned" && ndas.length > 0) {
-        await updateNdaStatus.mutateAsync({ 
-          ndaId: ndas[0].id, 
-          status: "counter_signed", 
-          file 
-        });
-      }
-      setShowUploader(false);
-    } catch (error) {
-      console.error("Upload failed:", error);
-    }
-  };
-
-  const handleMarkAsCompleted = async () => {
-    if (ndas.length > 0) {
-      await updateNdaStatus.mutateAsync({ 
-        ndaId: ndas[0].id, 
-        status: "completed" 
-      });
-    }
-  };
-
-  const handleDownload = async (ndaId: string) => {
-    const nda = ndas.find(n => n.id === ndaId);
-    if (!nda || !nda.document_id) return;
-    
-    try {
-      const document = await previewDocumentVersion({
-        id: nda.document_id,
-        filePath: '',
-        fileType: '',
-        fileSize: 0,
-        uploadedBy: '',
-        relatedEntityId: opportunityId,
-        relatedEntityType: 'lead',
-        createdAt: '',
-        updatedAt: '',
-        version: 1
+      await uploadNdaDocument.mutateAsync({
+        file: files[0],
+        opportunity_id: opportunity.id
       });
       
-      if (document) {
-        window.open(document, '_blank');
+      setShowUploadDialog(false);
+    } catch (error) {
+      console.error('Error uploading NDA:', error);
+    }
+  };
+  
+  const handleStatusChange = async (nda: Nda, status: NdaStatus) => {
+    setUpdating(true);
+    try {
+      await updateNdaStatus.mutateAsync({
+        ndaId: nda.id,
+        status
+      });
+      toast.success(`NDA status updated to ${status}`);
+    } catch (error) {
+      console.error('Error updating NDA status:', error);
+      toast.error('Failed to update NDA status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+  
+  const handleViewDocument = async (nda: Nda) => {
+    if (!nda.document_id) {
+      toast.error('No document attached to this NDA');
+      return;
+    }
+    
+    try {
+      // We need to fix this to ensure the document object has a name property
+      const document = {
+        id: nda.document_id,
+        name: `NDA_v${nda.version}.pdf`, // Adding the missing name property
+        filePath: '', // This will be filled by the backend
+        fileType: 'application/pdf',
+        fileSize: 0,
+        uploadedBy: nda.issued_by || '',
+        relatedEntityId: opportunity.id,
+        relatedEntityType: 'opportunity' as const,
+        createdAt: nda.created_at,
+        updatedAt: nda.updated_at,
+        version: nda.version
+      };
+      
+      const url = await getDocumentUrl(document.filePath);
+      if (url) {
+        window.open(url, '_blank');
       }
     } catch (error) {
-      console.error("Failed to download NDA:", error);
+      console.error('Error viewing document:', error);
+      toast.error('Failed to open document');
     }
   };
-
-  const renderNdaStatusAction = (status: NdaStatus) => {
+  
+  const handleDownloadDocument = async (nda: Nda) => {
+    if (!nda.document_id) {
+      toast.error('No document attached to this NDA');
+      return;
+    }
+    
+    try {
+      // We need to fix this to ensure the document object has a name property
+      const document = {
+        id: nda.document_id,
+        name: `NDA_v${nda.version}.pdf`, // Adding the missing name property
+        filePath: '', // This will be filled by the backend
+        fileType: 'application/pdf',
+        fileSize: 0,
+        uploadedBy: nda.issued_by || '',
+        relatedEntityId: opportunity.id,
+        relatedEntityType: 'opportunity' as const,
+        createdAt: nda.created_at,
+        updatedAt: nda.updated_at,
+        version: nda.version
+      };
+      
+      const url = await getDocumentUrl(document.filePath);
+      if (url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = document.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document');
+    }
+  };
+  
+  const getStatusLabel = (status: NdaStatus) => {
     switch (status) {
-      case "not_issued":
-        return (
-          <Button 
-            onClick={() => {
-              setUploadType("issue");
-              setShowUploader(true);
-            }}
-          >
-            <FileSignature className="h-4 w-4 mr-2" />
-            Issue NDA
-          </Button>
-        );
-      case "issued":
-        return (
-          <Button 
-            onClick={() => {
-              setUploadType("signed");
-              setShowUploader(true);
-            }}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Signed by Investor
-          </Button>
-        );
-      case "signed_by_investor":
-        return (
-          <Button 
-            onClick={() => {
-              setUploadType("countersigned");
-              setShowUploader(true);
-            }}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Counter-signed
-          </Button>
-        );
-      case "counter_signed":
-        return (
-          <Button onClick={handleMarkAsCompleted}>
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Mark as Completed
-          </Button>
-        );
-      case "completed":
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <FileCheck className="h-4 w-4 mr-1" />
-            Completed
-          </Badge>
-        );
+      case 'not_issued':
+        return 'Not Issued';
+      case 'issued':
+        return 'Issued';
+      case 'signed_by_investor':
+        return 'Signed by Investor';
+      case 'counter_signed':
+        return 'Counter-signed';
+      case 'completed':
+        return 'Completed';
       default:
-        return null;
+        return status;
     }
   };
-
+  
+  const getStatusIcon = (status: NdaStatus) => {
+    switch (status) {
+      case 'not_issued':
+        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      case 'issued':
+        return <Clock className="h-5 w-5 text-blue-500" />;
+      case 'signed_by_investor':
+        return <CheckCircle className="h-5 w-5 text-blue-500" />;
+      case 'counter_signed':
+        return <CheckCircle className="h-5 w-5 text-blue-500" />;
+      case 'completed':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      default:
+        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+    }
+  };
+  
   if (isLoading) {
-    return <Spinner />;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner />
+      </div>
+    );
   }
-
+  
   const latestNda = ndas.length > 0 ? ndas[0] : null;
-  const ndaStatus = latestNda?.status || "not_issued";
-
+  
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>NDA Management</CardTitle>
-          <CardDescription>
-            Track and manage Non-Disclosure Agreements for this opportunity
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-            <div>
-              <h3 className="text-lg font-medium">Current NDA Status</h3>
-              <div className="flex items-center mt-2">
-                <Badge className="text-sm" variant="outline">
-                  {formatStatus(ndaStatus)}
-                </Badge>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">NDA Management</h2>
+        {(!latestNda || latestNda.status === 'completed') && (
+          <Button onClick={() => setShowUploadDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload NDA
+          </Button>
+        )}
+      </div>
+      
+      {latestNda ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                <span>NDA v{latestNda.version}</span>
+              </div>
+              <Badge>{getStatusLabel(latestNda.status)}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Issued By</p>
+                  <p>{latestNda.issued_by || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Issued At</p>
+                  <p>{format(new Date(latestNda.issued_at), 'PPp')}</p>
+                </div>
+                
+                {latestNda.signed_at && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Signed At</p>
+                    <p>{format(new Date(latestNda.signed_at), 'PPp')}</p>
+                  </div>
+                )}
+                
+                {latestNda.countersigned_at && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Counter-signed At</p>
+                    <p>{format(new Date(latestNda.countersigned_at), 'PPp')}</p>
+                  </div>
+                )}
+                
+                {latestNda.completed_at && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Completed At</p>
+                    <p>{format(new Date(latestNda.completed_at), 'PPp')}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex space-x-2">
+                {latestNda.document_id && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDocument(latestNda)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownloadDocument(latestNda)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                  </>
+                )}
+                
+                {ndas.length > 1 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedNda(latestNda)}
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    View History
+                  </Button>
+                )}
+              </div>
+              
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-medium mb-2">Update Status</h3>
+                <div className="flex flex-wrap gap-2">
+                  {latestNda.status !== 'signed_by_investor' && (
+                    <Button 
+                      size="sm" 
+                      variant={latestNda.status === 'issued' ? 'default' : 'outline'}
+                      onClick={() => handleStatusChange(latestNda, 'signed_by_investor')}
+                      disabled={updating}
+                    >
+                      {updating ? <Spinner className="mr-2" /> : null}
+                      Mark as Signed by Investor
+                    </Button>
+                  )}
+                  
+                  {latestNda.status !== 'counter_signed' && latestNda.status === 'signed_by_investor' && (
+                    <Button 
+                      size="sm" 
+                      variant={latestNda.status === 'signed_by_investor' ? 'default' : 'outline'}
+                      onClick={() => handleStatusChange(latestNda, 'counter_signed')}
+                      disabled={updating}
+                    >
+                      {updating ? <Spinner className="mr-2" /> : null}
+                      Mark as Counter-signed
+                    </Button>
+                  )}
+                  
+                  {latestNda.status !== 'completed' && latestNda.status === 'counter_signed' && (
+                    <Button 
+                      size="sm" 
+                      variant={latestNda.status === 'counter_signed' ? 'default' : 'outline'}
+                      onClick={() => handleStatusChange(latestNda, 'completed')}
+                      disabled={updating}
+                    >
+                      {updating ? <Spinner className="mr-2" /> : null}
+                      Mark as Completed
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="mt-4 md:mt-0">
-              {renderNdaStatusAction(ndaStatus as NdaStatus)}
-            </div>
-          </div>
-
-          {showUploader && (
-            <Card className="mb-6">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  {uploadType === "issue" 
-                    ? "Upload NDA Template" 
-                    : uploadType === "signed" 
-                      ? "Upload Investor Signed NDA" 
-                      : "Upload Counter-signed NDA"
-                  }
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DocumentUploader 
-                  onUpload={handleUpload}
-                  onCancel={() => setShowUploader(false)}
-                  acceptedFileTypes={['.pdf', '.doc', '.docx']}
-                  maxFiles={1}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {ndas.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">NDA History</h3>
-              <div className="space-y-4">
-                {ndas.map((nda) => (
-                  <Card key={nda.id} className="overflow-hidden">
-                    <div className="flex items-center justify-between p-4">
-                      <div className="flex items-center space-x-4">
-                        <FileSignature className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <div className="font-medium">
-                            NDA Version {nda.version}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(nda.issued_at).toLocaleDateString()} - {formatStatus(nda.status)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDownload(nda.id)}
-                        disabled={!nda.document_id}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No NDA Issued Yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Upload an NDA to begin the NDA management process.
+            </p>
+            <Button onClick={() => setShowUploadDialog(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload NDA
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      
+      {ndas.length > 0 && ndas.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>NDA History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {ndas.slice(1).map((nda) => (
+                <div key={nda.id} className="flex items-center justify-between p-2 hover:bg-muted rounded-md">
+                  <div className="flex items-center">
+                    <div className="mr-4">{getStatusIcon(nda.status)}</div>
+                    <div>
+                      <p className="font-medium">NDA v{nda.version}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(nda.created_at), 'PPp')}
+                      </p>
                     </div>
-                  </Card>
-                ))}
-              </div>
+                  </div>
+                  <div className="flex space-x-1">
+                    {nda.document_id && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleViewDocument(nda)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDownloadDocument(nda)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+      
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload NDA</DialogTitle>
+          </DialogHeader>
+          <DocumentUploader 
+            relatedEntityId={opportunity.id}
+            relatedEntityType="opportunity"
+            onUpload={handleUpload}
+            onCancel={() => setShowUploadDialog(false)}
+            acceptedFileTypes={['.pdf', '.docx', '.doc']}
+            maxFiles={1}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

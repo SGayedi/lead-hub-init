@@ -199,7 +199,7 @@ export type NotificationType =
   | 'meeting_reminder'
   | 'system_notification';
 
-export type EntityType = "lead" | "task" | "meeting" | "document";
+export type EntityType = "lead" | "task" | "meeting" | "document" | "opportunity";
 
 export type MeetingType = "first" | "technical" | "second" | "other";
 
@@ -227,7 +227,7 @@ export interface Task {
   priority: Priority;
   dueDate?: string;
   relatedEntityId?: string;
-  relatedEntityType?: "lead" | "meeting";
+  relatedEntityType?: "lead" | "meeting" | "opportunity";
   createdAt: string;
   updatedAt: string;
 }
@@ -257,7 +257,7 @@ export interface Document {
   fileSize: number;
   uploadedBy: string;
   relatedEntityId: string;
-  relatedEntityType: "lead" | "meeting";
+  relatedEntityType: "lead" | "meeting" | "opportunity";
   createdAt: string;
   updatedAt: string;
   version: number;
