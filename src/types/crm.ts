@@ -51,3 +51,83 @@ export interface Translation {
     [lang in Language]: string;
   };
 }
+
+export type TaskStatus = "pending" | "in_progress" | "completed" | "canceled";
+
+export type NotificationType = 
+  | "lead_high_priority"
+  | "lead_inactive"
+  | "lead_archived"
+  | "task_assigned"
+  | "task_due_soon"
+  | "meeting_reminder";
+
+export type EntityType = "lead" | "task" | "meeting" | "document";
+
+export type MeetingType = "first" | "technical" | "second" | "other";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  read: boolean;
+  relatedEntityId?: string;
+  relatedEntityType?: EntityType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  assignedTo?: string;
+  assignedBy: string;
+  status: TaskStatus;
+  priority: Priority;
+  dueDate?: string;
+  relatedEntityId?: string;
+  relatedEntityType?: "lead" | "meeting";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  meetingType: MeetingType;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  leadId?: string;
+  createdBy: string;
+  outcome?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string;
+  relatedEntityId: string;
+  relatedEntityType: "lead" | "meeting";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  createdBy: string;
+  relatedEntityId: string;
+  relatedEntityType: EntityType;
+  createdAt: string;
+  updatedAt: string;
+}

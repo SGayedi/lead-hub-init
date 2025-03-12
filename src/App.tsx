@@ -12,6 +12,8 @@ import Enquiries from "./pages/Enquiries";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Tasks from "./pages/Tasks";
+import Meetings from "./pages/Meetings";
 
 // Components
 import { Layout } from "./components/Layout";
@@ -37,6 +39,16 @@ function App() {
             <Route path="/enquiries" element={
               <ProtectedRoute>
                 <Layout><Enquiries /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/tasks" element={
+              <ProtectedRoute>
+                <Layout><Tasks /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/meetings" element={
+              <ProtectedRoute>
+                <Layout><Meetings /></Layout>
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
