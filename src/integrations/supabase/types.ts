@@ -9,6 +9,140 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      business_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          document_id: string | null
+          feedback: string | null
+          id: string
+          notes: string | null
+          opportunity_id: string
+          received_at: string | null
+          requested_at: string | null
+          requested_by: string | null
+          status: Database["public"]["Enums"]["business_plan_status"]
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_id?: string | null
+          feedback?: string | null
+          id?: string
+          notes?: string | null
+          opportunity_id: string
+          received_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["business_plan_status"]
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_id?: string | null
+          feedback?: string | null
+          id?: string
+          notes?: string | null
+          opportunity_id?: string
+          received_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["business_plan_status"]
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_plans_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_plans_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_template_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          order_index: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          order_index: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          order_index?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -83,6 +217,104 @@ export type Database = {
           version_history?: Json[] | null
         }
         Relationships: []
+      }
+      due_diligence_checklist_items: {
+        Row: {
+          assigned_to: string | null
+          checklist_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          name: string
+          notes: string | null
+          order_index: number
+          status: Database["public"]["Enums"]["checklist_item_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          checklist_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          order_index: number
+          status?: Database["public"]["Enums"]["checklist_item_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          checklist_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          order_index?: number
+          status?: Database["public"]["Enums"]["checklist_item_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "due_diligence_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "due_diligence_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      due_diligence_checklists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          opportunity_id: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          opportunity_id: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          opportunity_id?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "due_diligence_checklists_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "due_diligence_checklists_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gmail_emails: {
         Row: {
@@ -268,6 +500,66 @@ export type Database = {
           },
         ]
       }
+      ndas: {
+        Row: {
+          completed_at: string | null
+          countersigned_at: string | null
+          created_at: string
+          document_id: string | null
+          id: string
+          issued_at: string
+          issued_by: string | null
+          opportunity_id: string
+          signed_at: string | null
+          status: Database["public"]["Enums"]["nda_status"]
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          countersigned_at?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          opportunity_id: string
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["nda_status"]
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          countersigned_at?: string | null
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          opportunity_id?: string
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["nda_status"]
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ndas_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ndas_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -306,6 +598,56 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      opportunities: {
+        Row: {
+          business_plan_notes: string | null
+          business_plan_status: Database["public"]["Enums"]["business_plan_status"]
+          created_at: string
+          id: string
+          lead_id: string
+          nda_status: Database["public"]["Enums"]["nda_status"]
+          site_visit_date: string | null
+          site_visit_notes: string | null
+          site_visit_scheduled: boolean | null
+          status: Database["public"]["Enums"]["opportunity_status"]
+          updated_at: string
+        }
+        Insert: {
+          business_plan_notes?: string | null
+          business_plan_status?: Database["public"]["Enums"]["business_plan_status"]
+          created_at?: string
+          id?: string
+          lead_id: string
+          nda_status?: Database["public"]["Enums"]["nda_status"]
+          site_visit_date?: string | null
+          site_visit_notes?: string | null
+          site_visit_scheduled?: boolean | null
+          status?: Database["public"]["Enums"]["opportunity_status"]
+          updated_at?: string
+        }
+        Update: {
+          business_plan_notes?: string | null
+          business_plan_status?: Database["public"]["Enums"]["business_plan_status"]
+          created_at?: string
+          id?: string
+          lead_id?: string
+          nda_status?: Database["public"]["Enums"]["nda_status"]
+          site_visit_date?: string | null
+          site_visit_notes?: string | null
+          site_visit_scheduled?: boolean | null
+          status?: Database["public"]["Enums"]["opportunity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -424,6 +766,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      convert_lead_to_opportunity: {
+        Args: {
+          lead_id_param: string
+        }
+        Returns: string
+      }
       create_gmail_emails_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -459,9 +807,34 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_opportunity_assessment_status: {
+        Args: {
+          opportunity_id_param: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      business_plan_status:
+        | "not_requested"
+        | "requested"
+        | "received"
+        | "updates_needed"
+        | "approved"
+        | "rejected"
+      checklist_item_status: "not_started" | "in_progress" | "completed"
+      nda_status:
+        | "not_issued"
+        | "issued"
+        | "signed_by_investor"
+        | "counter_signed"
+        | "completed"
+      opportunity_status:
+        | "assessment_in_progress"
+        | "assessment_completed"
+        | "waiting_for_approval"
+        | "due_diligence_approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
