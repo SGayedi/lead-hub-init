@@ -2,15 +2,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BusinessPlan, BusinessPlanStatus, Document } from '@/types/crm';
+import { BusinessPlan, BusinessPlanStatus } from '@/types/crm';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
+// Convert database business plan to frontend type
 const convertDbBusinessPlanToBusinessPlan = (dbPlan: any): BusinessPlan => ({
   id: dbPlan.id,
   opportunity_id: dbPlan.opportunity_id,
   version: dbPlan.version,
-  status: dbPlan.status as BusinessPlanStatus,
+  status: dbPlan.status,
   document_id: dbPlan.document_id,
   notes: dbPlan.notes,
   requested_by: dbPlan.requested_by,
@@ -23,16 +24,14 @@ const convertDbBusinessPlanToBusinessPlan = (dbPlan: any): BusinessPlan => ({
   updated_at: dbPlan.updated_at
 });
 
-export function useBusinessPlans(opportunityId?: string) {
+export function useBusinessPlans(opportunityId: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedBusinessPlan, setSelectedBusinessPlan] = useState<BusinessPlan | null>(null);
-
+  
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['businessPlans', opportunityId, user?.id],
+    queryKey: ['business_plans', opportunityId],
     queryFn: async () => {
-      if (!user || !opportunityId) return [];
-      
       const { data, error } = await supabase
         .from('business_plans')
         .select('*')
@@ -43,259 +42,236 @@ export function useBusinessPlans(opportunityId?: string) {
       
       return data.map(convertDbBusinessPlanToBusinessPlan);
     },
-    enabled: !!user && !!opportunityId
+    enabled: !!opportunityId
   });
 
-  const createBusinessPlan = useMutation({
-    mutationFn: async ({ 
-      opportunity_id, 
-      document_id,
-      status = 'received',
-      notes = '',
-    }: { 
-      opportunity_id: string;
-      document_id?: string;
-      status?: BusinessPlanStatus;
-      notes?: string;
-    }) => {
+  const requestBusinessPlan = useMutation({
+    mutationFn: async ({ opportunity_id, notes }: { opportunity_id: string, notes?: string }) => {
       if (!user) throw new Error('User not authenticated');
       
-      const version = data && data.length > 0 ? data[0].version + 1 : 1;
-      
-      const { data: newBusinessPlan, error } = await supabase
+      // 1. Get latest version if exists
+      const { data: existingPlans } = await supabase
         .from('business_plans')
-        .insert({
+        .select('version')
+        .eq('opportunity_id', opportunity_id)
+        .order('version', { ascending: false })
+        .limit(1);
+      
+      const nextVersion = existingPlans && existingPlans.length > 0 ? existingPlans[0].version + 1 : 1;
+      
+      // 2. Insert new plan
+      const { error } = await supabase
+        .from('business_plans')
+        .insert([{
           opportunity_id,
-          version,
-          status,
-          document_id,
-          notes,
-          received_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+          version: nextVersion,
+          status: 'requested',
+          requested_by: user.id,
+          requested_at: new Date().toISOString(),
+          notes
+        }]);
       
       if (error) throw error;
       
-      return newBusinessPlan;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businessPlans'] });
-      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      toast.success('Business plan created successfully');
-    },
-    onError: (error) => {
-      console.error('Error creating business plan:', error);
-      toast.error(`Failed to create business plan: ${error.message}`);
-    }
-  });
-  
-  const requestBusinessPlan = useMutation({
-    mutationFn: async ({ 
-      opportunity_id,
-      notes = ''
-    }: { 
-      opportunity_id: string;
-      notes?: string;
-    }) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const { data: updatedOpportunity, error } = await supabase
+      // 3. Update opportunity status
+      await supabase
         .from('opportunities')
         .update({
           business_plan_status: 'requested',
           business_plan_notes: notes
         })
-        .eq('id', opportunity_id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Create a business plan record with 'requested' status
-      const { data: newBusinessPlan, error: bpError } = await supabase
-        .from('business_plans')
-        .insert({
-          opportunity_id,
-          status: 'requested',
-          notes,
-          requested_by: user.id,
-          requested_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
-      if (bpError) throw bpError;
-      
-      return { opportunity: updatedOpportunity, businessPlan: newBusinessPlan };
+        .eq('id', opportunity_id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businessPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['business_plans'] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
       toast.success('Business plan requested successfully');
     },
     onError: (error) => {
-      console.error('Error requesting business plan:', error);
       toast.error(`Failed to request business plan: ${error.message}`);
     }
   });
-  
-  const updateBusinessPlanStatus = useMutation({
-    mutationFn: async ({ 
-      businessPlanId, 
-      status, 
-      feedback = ''
-    }: { 
-      businessPlanId: string; 
-      status: BusinessPlanStatus; 
-      feedback?: string;
-    }) => {
+
+  const approveBusinessPlan = useMutation({
+    mutationFn: async ({ businessPlanId }: { businessPlanId: string }) => {
       if (!user) throw new Error('User not authenticated');
       
-      const updateData: any = { status };
-      
-      if (status === 'approved') {
-        updateData.approved_by = user.id;
-        updateData.approved_at = new Date().toISOString();
-      }
-      
-      if (feedback) {
-        updateData.feedback = feedback;
-      }
-      
-      const { data: updatedPlan, error } = await supabase
+      // Get the business plan details
+      const { data: planData } = await supabase
         .from('business_plans')
-        .update(updateData)
+        .select('*')
         .eq('id', businessPlanId)
-        .select()
         .single();
       
-      if (error) throw error;
+      if (!planData) throw new Error('Business plan not found');
       
-      // Also update the opportunity status
-      if (opportunityId) {
-        const { error: oppError } = await supabase
-          .from('opportunities')
-          .update({ business_plan_status: status })
-          .eq('id', opportunityId);
-        
-        if (oppError) throw oppError;
-      }
-      
-      return updatedPlan;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businessPlans'] });
-      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      toast.success('Business plan status updated successfully');
-    },
-    onError: (error) => {
-      console.error('Error updating business plan status:', error);
-      toast.error(`Failed to update business plan status: ${error.message}`);
-    }
-  });
-  
-  const uploadBusinessPlanDocument = useMutation({
-    mutationFn: async ({ 
-      file, 
-      opportunity_id,
-      status = 'received',
-      notes = ''
-    }: { 
-      file: File; 
-      opportunity_id: string;
-      status?: BusinessPlanStatus;
-      notes?: string;
-    }) => {
-      if (!user) throw new Error('User not authenticated');
-      
-      // 1. Upload file to storage
-      const filePath = `opportunities/${opportunity_id}/business_plans/${file.name}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-      
-      if (uploadError) throw uploadError;
-      
-      // 2. Create document record
-      const { data: documentData, error: docError } = await supabase
-        .from('documents')
-        .insert({
-          name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
-          related_entity_id: opportunity_id,
-          related_entity_type: 'opportunity',
-          version: 1
-        })
-        .select()
-        .single();
-      
-      if (docError) {
-        // If document creation fails, try to delete the uploaded file
-        await supabase.storage.from('documents').remove([filePath]);
-        throw docError;
-      }
-      
-      // 3. Create or update business plan
-      const version = data && data.length > 0 ? data[0].version + 1 : 1;
-      
-      const { data: businessPlanData, error: bpError } = await supabase
+      // Update business plan status
+      const { error: updateError } = await supabase
         .from('business_plans')
-        .insert({
-          opportunity_id,
-          version,
-          status,
-          document_id: documentData.id,
-          notes,
-          received_at: new Date().toISOString()
+        .update({
+          status: 'approved',
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
         })
-        .select()
-        .single();
+        .eq('id', businessPlanId);
       
-      if (bpError) {
-        // If business plan creation fails, try to clean up
-        await supabase.from('documents').delete().eq('id', documentData.id);
-        await supabase.storage.from('documents').remove([filePath]);
-        throw bpError;
-      }
+      if (updateError) throw updateError;
       
-      // 4. Update opportunity status
-      const { error: oppError } = await supabase
+      // Update opportunity status
+      await supabase
         .from('opportunities')
         .update({
-          business_plan_status: status
+          business_plan_status: 'approved'
         })
-        .eq('id', opportunity_id);
-      
-      if (oppError) throw oppError;
-      
-      return businessPlanData;
+        .eq('id', planData.opportunity_id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['businessPlans'] });
+      queryClient.invalidateQueries({ queryKey: ['business_plans'] });
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Business plan uploaded successfully');
+      toast.success('Business plan approved');
     },
     onError: (error) => {
-      console.error('Error uploading business plan:', error);
-      toast.error(`Failed to upload business plan: ${error.message}`);
+      toast.error(`Failed to approve business plan: ${error.message}`);
     }
   });
-  
+
+  const rejectBusinessPlan = useMutation({
+    mutationFn: async ({ businessPlanId, feedback }: { businessPlanId: string, feedback: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // Get the business plan details
+      const { data: planData } = await supabase
+        .from('business_plans')
+        .select('*')
+        .eq('id', businessPlanId)
+        .single();
+      
+      if (!planData) throw new Error('Business plan not found');
+      
+      // Update business plan status
+      const { error: updateError } = await supabase
+        .from('business_plans')
+        .update({
+          status: 'rejected',
+          feedback
+        })
+        .eq('id', businessPlanId);
+      
+      if (updateError) throw updateError;
+      
+      // Update opportunity status
+      await supabase
+        .from('opportunities')
+        .update({
+          business_plan_status: 'rejected'
+        })
+        .eq('id', planData.opportunity_id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['business_plans'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      toast.success('Business plan rejected');
+    },
+    onError: (error) => {
+      toast.error(`Failed to reject business plan: ${error.message}`);
+    }
+  });
+
+  const requestUpdates = useMutation({
+    mutationFn: async ({ businessPlanId, feedback }: { businessPlanId: string, feedback: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // Get the business plan details
+      const { data: planData } = await supabase
+        .from('business_plans')
+        .select('*')
+        .eq('id', businessPlanId)
+        .single();
+      
+      if (!planData) throw new Error('Business plan not found');
+      
+      // Update business plan status
+      const { error: updateError } = await supabase
+        .from('business_plans')
+        .update({
+          status: 'updates_needed',
+          feedback
+        })
+        .eq('id', businessPlanId);
+      
+      if (updateError) throw updateError;
+      
+      // Update opportunity status
+      await supabase
+        .from('opportunities')
+        .update({
+          business_plan_status: 'updates_needed'
+        })
+        .eq('id', planData.opportunity_id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['business_plans'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      toast.success('Updates requested for business plan');
+    },
+    onError: (error) => {
+      toast.error(`Failed to request updates: ${error.message}`);
+    }
+  });
+
+  const uploadBusinessPlan = useMutation({
+    mutationFn: async ({ businessPlanId, documentId }: { businessPlanId: string, documentId: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // Get the business plan details
+      const { data: planData } = await supabase
+        .from('business_plans')
+        .select('*')
+        .eq('id', businessPlanId)
+        .single();
+      
+      if (!planData) throw new Error('Business plan not found');
+      
+      // Update business plan with document
+      const { error: updateError } = await supabase
+        .from('business_plans')
+        .update({
+          document_id: documentId,
+          status: 'received',
+          received_at: new Date().toISOString()
+        })
+        .eq('id', businessPlanId);
+      
+      if (updateError) throw updateError;
+      
+      // Update opportunity status
+      await supabase
+        .from('opportunities')
+        .update({
+          business_plan_status: 'received'
+        })
+        .eq('id', planData.opportunity_id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['business_plans'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      toast.success('Business plan document uploaded');
+    },
+    onError: (error) => {
+      toast.error(`Failed to upload business plan document: ${error.message}`);
+    }
+  });
+
   return {
     businessPlans: data || [],
     isLoading,
     error,
     refetch,
-    createBusinessPlan,
     requestBusinessPlan,
-    updateBusinessPlanStatus,
-    uploadBusinessPlanDocument,
+    approveBusinessPlan,
+    rejectBusinessPlan,
+    requestUpdates,
+    uploadBusinessPlan,
     selectedBusinessPlan,
     setSelectedBusinessPlan
   };

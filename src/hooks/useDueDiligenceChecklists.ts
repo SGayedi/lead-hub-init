@@ -85,7 +85,7 @@ export function useDueDiligenceChecklists(opportunityId: string) {
       
       const updateData: any = { status };
       
-      if (notes) {
+      if (notes !== undefined) {
         updateData.notes = notes;
       }
       
@@ -123,6 +123,34 @@ export function useDueDiligenceChecklists(opportunityId: string) {
     onError: (error) => {
       console.error('Error updating checklist item:', error);
       toast.error('Failed to update checklist item');
+    }
+  });
+
+  const updateChecklistItemNotes = useMutation({
+    mutationFn: async ({ 
+      itemId, 
+      notes 
+    }: { 
+      itemId: string, 
+      notes: string 
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      // Update checklist item notes
+      const { error } = await supabase
+        .from('due_diligence_checklist_items')
+        .update({ notes })
+        .eq('id', itemId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['checklist_items'] });
+      toast.success('Checklist item notes updated');
+    },
+    onError: (error) => {
+      console.error('Error updating checklist item notes:', error);
+      toast.error('Failed to update notes');
     }
   });
 
@@ -171,6 +199,7 @@ export function useDueDiligenceChecklists(opportunityId: string) {
     error: checklistError || itemsError,
     refetchItems,
     updateChecklistItemStatus,
+    updateChecklistItemNotes,
     assignChecklistItem
   };
 }

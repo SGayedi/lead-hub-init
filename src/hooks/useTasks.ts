@@ -24,7 +24,7 @@ const convertDbTaskToTask = (dbTask: any): Task => ({
 
 interface RelatedEntityFilter {
   entityId: string;
-  entityType: "lead" | "meeting";
+  entityType: "lead" | "meeting" | "opportunity";
 }
 
 interface TaskFilter {

@@ -1,253 +1,224 @@
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { useBusinessPlans } from "@/hooks/useBusinessPlans";
-import { DocumentUploader } from "@/components/DocumentUploader";
+import { useDocuments } from "@/hooks/useDocuments";
 import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getStatusColorClass } from "@/lib/utils";
+import { DocumentUploader } from "@/components/DocumentUploader";
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, CheckCircle, XCircle, RefreshCw } from "lucide-react";
-import { getStatusStyle } from "@/lib/utils";
-import { Opportunity, BusinessPlanStatus } from "@/types/crm";
+import { Label } from "@/components/ui/label";
+import { BusinessPlanStatus } from "@/types/crm";
+import { format } from "date-fns";
 
 interface OpportunityBusinessPlanTabProps {
-  opportunity: Opportunity;
+  opportunityId: string;
 }
 
-export function OpportunityBusinessPlanTab({ opportunity }: OpportunityBusinessPlanTabProps) {
-  const [showUploader, setShowUploader] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+export function OpportunityBusinessPlanTab({ opportunityId }: OpportunityBusinessPlanTabProps) {
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [action, setAction] = useState<"request_updates" | "reject" | null>(null);
   
-  const { 
-    businessPlans, 
-    isLoading, 
+  const {
+    businessPlans,
+    isLoading,
     requestBusinessPlan,
     approveBusinessPlan,
     rejectBusinessPlan,
     requestUpdates,
-    uploadBusinessPlan
-  } = useBusinessPlans(opportunity.id);
+    uploadBusinessPlan,
+    selectedBusinessPlan,
+    setSelectedBusinessPlan
+  } = useBusinessPlans(opportunityId);
   
-  const handleUploadComplete = () => {
-    setShowUploader(false);
+  const latestBusinessPlan = businessPlans.length > 0 ? businessPlans[0] : null;
+  
+  const handleRequestBusinessPlan = () => {
+    requestBusinessPlan.mutate({ opportunity_id: opportunityId });
   };
   
-  const handleSubmitFeedback = async () => {
-    if (!selectedPlan) return;
-    
-    await requestUpdates.mutateAsync({
-      businessPlanId: selectedPlan,
-      feedback: notes
-    });
-    
-    setNotes("");
-    setSelectedPlan(null);
-  };
-  
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "PPP");
-  };
-  
-  const getStatusBadge = (status: BusinessPlanStatus) => {
-    switch(status) {
-      case "not_requested":
-        return <Badge variant="outline" className="bg-gray-100">Not Requested</Badge>;
-      case "requested":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-700">Requested</Badge>;
-      case "received":
-        return <Badge variant="outline" className="bg-green-100 text-green-700">Received</Badge>;
-      case "updates_needed":
-        return <Badge variant="outline" className="bg-amber-100 text-amber-700">Updates Needed</Badge>;
-      case "approved":
-        return <Badge variant="outline" className="bg-green-100 text-green-700">Approved</Badge>;
-      case "rejected":
-        return <Badge variant="outline" className="bg-red-100 text-red-700">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
+  const handleApproveBusinessPlan = () => {
+    if (latestBusinessPlan) {
+      approveBusinessPlan.mutate({ businessPlanId: latestBusinessPlan.id });
     }
   };
-
-  const handleUpload = async (files: File[]) => {
-    if (files.length === 0) return;
-    
-    const file = files[0];
-    await uploadBusinessPlan.mutateAsync({
-      opportunityId: opportunity.id,
-      file
-    });
+  
+  const handleReject = () => {
+    setAction("reject");
+    setShowFeedbackDialog(true);
   };
   
-  const handleDownloadDocument = async (document: any) => {
-    try {
-      const url = document.filePath;
-      if (url) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = document.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } catch (error) {
-      console.error('Error downloading document:', error);
+  const handleRequestUpdates = () => {
+    setAction("request_updates");
+    setShowFeedbackDialog(true);
+  };
+  
+  const handleSubmitFeedback = () => {
+    if (!latestBusinessPlan) return;
+    
+    if (action === "reject") {
+      rejectBusinessPlan.mutate({ 
+        businessPlanId: latestBusinessPlan.id, 
+        feedback 
+      });
+    } else if (action === "request_updates") {
+      requestUpdates.mutate({ 
+        businessPlanId: latestBusinessPlan.id, 
+        feedback 
+      });
+    }
+    
+    setShowFeedbackDialog(false);
+    setFeedback("");
+    setAction(null);
+  };
+  
+  const handleDocumentUploaded = (documentId: string) => {
+    if (latestBusinessPlan) {
+      uploadBusinessPlan.mutate({ 
+        businessPlanId: latestBusinessPlan.id, 
+        documentId 
+      });
     }
   };
-
+  
+  const getStatusText = (status: BusinessPlanStatus) => {
+    switch (status) {
+      case "not_requested": return "Not Requested";
+      case "requested": return "Requested";
+      case "received": return "Received";
+      case "updates_needed": return "Updates Needed";
+      case "approved": return "Approved";
+      case "rejected": return "Rejected";
+      default: return status;
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Spinner />
+      </div>
+    );
+  }
+  
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Business Plan</h3>
-        <div className="space-x-2">
-          {opportunity.business_plan_status === "not_requested" && (
-            <Button 
-              size="sm" 
-              onClick={() => requestBusinessPlan.mutate(opportunity.id)}
-              disabled={requestBusinessPlan.isPending}
-            >
-              Request Business Plan
-            </Button>
-          )}
-          
-          {["not_requested", "updates_needed", "rejected"].includes(opportunity.business_plan_status) && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => setShowUploader(true)}
-            >
-              Upload Business Plan
-            </Button>
-          )}
-        </div>
+        <h3 className="text-lg font-medium">Business Plan</h3>
+        {!latestBusinessPlan && (
+          <Button onClick={handleRequestBusinessPlan} disabled={requestBusinessPlan.isPending}>
+            Request Business Plan
+          </Button>
+        )}
       </div>
       
-      {showUploader && (
-        <div className="border p-4 rounded-md bg-muted/50">
-          <h4 className="font-medium mb-2">Upload Business Plan</h4>
-          <DocumentUploader 
-            relatedEntityId={opportunity.id}
-            relatedEntityType="opportunity"
-            onUpload={handleUpload}
-            onCancel={() => setShowUploader(false)}
-            acceptedFileTypes={[".pdf", ".docx", ".doc", ".xlsx", ".xls", ".ppt", ".pptx"]}
-            maxFiles={1}
-          />
-        </div>
-      )}
-      
-      {opportunity.business_plan_status === "received" && (
-        <div className="flex justify-end space-x-2">
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="flex items-center gap-1 text-red-500"
-            onClick={() => rejectBusinessPlan.mutate(opportunity.id)}
-          >
-            <XCircle className="h-4 w-4" />
-            Reject
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1 text-amber-500"
-            onClick={() => setSelectedPlan(businessPlans[0]?.id)}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Request Updates
-          </Button>
-          <Button 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => approveBusinessPlan.mutate(opportunity.id)}
-          >
-            <CheckCircle className="h-4 w-4" />
-            Approve
-          </Button>
-        </div>
-      )}
-      
-      {selectedPlan && (
-        <div className="border p-4 rounded-md bg-muted/50">
-          <h4 className="font-medium mb-2">Request Updates</h4>
-          <Textarea
-            className="mb-2"
-            placeholder="Provide feedback on what updates are needed..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-          />
-          <div className="flex justify-end space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setSelectedPlan(null)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              size="sm"
-              onClick={handleSubmitFeedback}
-              disabled={!notes.trim()}
-            >
-              Submit Feedback
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner />
-        </div>
-      ) : businessPlans && businessPlans.length > 0 ? (
-        <div className="space-y-4">
-          {businessPlans.map((plan) => (
-            <div key={plan.id} className="p-4 border rounded-md">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-500" />
-                    <span className="font-medium">Business Plan v{plan.version}</span>
-                    {getStatusBadge(plan.status as BusinessPlanStatus)}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {plan.received_at ? `Received on ${formatDate(plan.received_at)}` : 'No receive date'}
-                  </p>
-                  {plan.notes && (
-                    <p className="mt-2 text-sm border-l-2 border-blue-300 pl-2">
-                      {plan.notes}
-                    </p>
-                  )}
-                  {plan.feedback && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium">Feedback:</p>
-                      <p className="text-sm border-l-2 border-amber-300 pl-2">
-                        {plan.feedback}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {plan.document_id && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => plan.document_id && handleDownloadDocument(plan)}
-                  >
-                    Download
-                  </Button>
-                )}
+      {latestBusinessPlan ? (
+        <div className="border rounded-md p-4 bg-card">
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between">
+              <div>
+                <p className="text-sm font-medium">Status</p>
+                <Badge className={getStatusColorClass(latestBusinessPlan.status)}>
+                  {getStatusText(latestBusinessPlan.status)}
+                </Badge>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium">Version</p>
+                <span>{latestBusinessPlan.version}</span>
               </div>
             </div>
-          ))}
+            
+            {latestBusinessPlan.requested_at && (
+              <div>
+                <p className="text-sm font-medium">Requested</p>
+                <p className="text-sm">
+                  {format(new Date(latestBusinessPlan.requested_at), "PPp")}
+                </p>
+              </div>
+            )}
+            
+            {latestBusinessPlan.received_at && (
+              <div>
+                <p className="text-sm font-medium">Received</p>
+                <p className="text-sm">
+                  {format(new Date(latestBusinessPlan.received_at), "PPp")}
+                </p>
+              </div>
+            )}
+            
+            {latestBusinessPlan.feedback && (
+              <div>
+                <p className="text-sm font-medium">Feedback</p>
+                <p className="text-sm whitespace-pre-wrap">{latestBusinessPlan.feedback}</p>
+              </div>
+            )}
+            
+            {(latestBusinessPlan.status === "requested" || latestBusinessPlan.status === "updates_needed") && (
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-medium mb-2">Upload Business Plan</h4>
+                <DocumentUploader 
+                  relatedEntityId={opportunityId} 
+                  relatedEntityType="opportunity"
+                  onDocumentUploaded={handleDocumentUploaded}
+                />
+              </div>
+            )}
+            
+            {latestBusinessPlan.status === "received" && (
+              <div className="pt-4 border-t flex flex-wrap gap-2">
+                <Button onClick={handleApproveBusinessPlan} className="bg-green-600 hover:bg-green-700">
+                  Approve
+                </Button>
+                <Button onClick={handleRequestUpdates} variant="outline">
+                  Request Updates
+                </Button>
+                <Button onClick={handleReject} variant="destructive">
+                  Reject
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          {opportunity.business_plan_status === "requested" 
-            ? "Waiting for business plan from investor."
-            : "No business plan available yet."}
+        <div className="flex p-8 justify-center items-center rounded-md border bg-muted/40">
+          <p className="text-muted-foreground">No business plan has been requested yet.</p>
         </div>
       )}
+      
+      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+        <DialogContent>
+          <DialogTitle>
+            {action === "reject" ? "Reject Business Plan" : "Request Updates"}
+          </DialogTitle>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="feedback">Feedback</Label>
+              <Textarea
+                id="feedback"
+                placeholder="Provide feedback for the investor"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={5}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFeedbackDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitFeedback} disabled={!feedback.trim()}>
+              Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

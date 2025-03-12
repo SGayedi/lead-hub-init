@@ -1,3 +1,4 @@
+
 export type Role = "investor_services" | "legal_services" | "property_development" | "senior_management";
 
 export type InquiryType = "company" | "individual";
