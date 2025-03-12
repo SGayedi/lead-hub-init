@@ -33,8 +33,7 @@ export default function Enquiries() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('gmail_emails')
-        .select('*')
+        .rpc('get_gmail_emails')
         .order('received_at', { ascending: false });
       
       if (error) {
@@ -42,7 +41,7 @@ export default function Enquiries() {
       }
       
       if (data) {
-        setEmails(data as unknown as GmailEmail[]);
+        setEmails(data as GmailEmail[]);
       }
     } catch (error) {
       console.error("Error fetching emails:", error);
@@ -58,9 +57,7 @@ export default function Enquiries() {
   const handleMarkAsEnquiry = async (emailId: string) => {
     try {
       const { error } = await supabase
-        .from('gmail_emails' as any)
-        .update({ is_enquiry: true })
-        .eq('id', emailId);
+        .rpc('mark_email_as_enquiry', { email_id: emailId });
       
       if (error) throw error;
       
@@ -125,12 +122,10 @@ export default function Enquiries() {
     
     try {
       const { error } = await supabase
-        .from('gmail_emails' as any)
-        .update({ 
-          associated_lead_id: leadId,
-          is_enquiry: true 
-        })
-        .eq('id', selectedEmail.id);
+        .rpc('connect_email_to_lead', { 
+          email_id: selectedEmail.id, 
+          lead_id: leadId 
+        });
       
       if (error) throw error;
       
