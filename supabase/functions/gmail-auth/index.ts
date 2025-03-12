@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -16,8 +15,8 @@ const GMAIL_CLIENT_SECRET = Deno.env.get("GMAIL_CLIENT_SECRET");
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 
 // Log environment variables for debugging
-console.log("Env variables loaded:");
-console.log("GMAIL_CLIENT_ID present:", !!GMAIL_CLIENT_ID);
+console.log("Environment variables loaded:");
+console.log("GMAIL_CLIENT_ID:", GMAIL_CLIENT_ID);
 console.log("GMAIL_CLIENT_SECRET present:", !!GMAIL_CLIENT_SECRET);
 console.log("REDIRECT_URI:", REDIRECT_URI);
 
@@ -376,3 +375,4 @@ serve(async (req) => {
     );
   }
 });
+
