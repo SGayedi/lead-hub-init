@@ -11,7 +11,20 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID")!;
 const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET")!;
-const REDIRECT_URI = Deno.env.get("REDIRECT_URI")!;
+// Use a default redirect URI if not provided or not valid
+let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
+
+// Validate redirect URI - it must be a valid absolute URL
+try {
+  // Test if it can be parsed as a URL
+  new URL(REDIRECT_URI);
+} catch (e) {
+  console.error("Invalid REDIRECT_URI:", REDIRECT_URI, "Error:", e.message);
+  // Set a fallback for local development
+  REDIRECT_URI = "http://localhost:8080/settings";
+}
+
+console.log("Using REDIRECT_URI:", REDIRECT_URI);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -51,7 +64,14 @@ serve(async (req) => {
         console.log('Handling authorize request');
         // Generate Microsoft OAuth URL
         const scope = encodeURIComponent('offline_access Mail.Read');
-        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_mode=query&scope=${scope}&state=${user.id}`;
+        
+        // Ensure the redirect URI is properly encoded
+        const encodedRedirectUri = encodeURIComponent(REDIRECT_URI);
+        console.log('Encoded redirect URI:', encodedRedirectUri);
+        
+        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
+        
+        console.log('Generated auth URL:', authUrl);
         
         return new Response(
           JSON.stringify({ url: authUrl }),
@@ -71,23 +91,29 @@ serve(async (req) => {
         }
 
         // Exchange code for token
-        const tokenResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+        const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+        console.log('Requesting token with redirect URI:', REDIRECT_URI);
+        
+        const formData = new URLSearchParams({
+          client_id: MS_CLIENT_ID,
+          client_secret: MS_CLIENT_SECRET,
+          code,
+          redirect_uri: REDIRECT_URI,
+          grant_type: 'authorization_code',
+        });
+
+        const tokenResponse = await fetch(tokenUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({
-            client_id: MS_CLIENT_ID,
-            client_secret: MS_CLIENT_SECRET,
-            code,
-            redirect_uri: REDIRECT_URI,
-            grant_type: 'authorization_code',
-          }),
+          body: formData,
         });
 
         const tokenData = await tokenResponse.json();
         
         if (!tokenResponse.ok) {
+          console.error('Token exchange error:', tokenData);
           return new Response(
             JSON.stringify({ error: 'Failed to exchange code for token', details: tokenData }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,6 +131,7 @@ serve(async (req) => {
           });
 
         if (insertError) {
+          console.error('Token storage error:', insertError);
           return new Response(
             JSON.stringify({ error: 'Failed to store token', details: insertError }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -236,4 +263,3 @@ serve(async (req) => {
     );
   }
 });
-
