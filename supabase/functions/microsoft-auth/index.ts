@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -42,24 +43,29 @@ serve(async (req) => {
   }
 
   try {
-    // Validate required environment variables
-    if (!MS_CLIENT_ID || !MS_CLIENT_SECRET) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Microsoft OAuth configuration is incomplete', 
-          details: 'Missing client ID or secret' 
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Get auth token from header
+    const body = await req.json();
+    const { path } = body;
+
+    // Special endpoint for checking setup status that doesn't require authentication
+    if (path === 'check-setup') {
+      const isConfigured = !!(MS_CLIENT_ID && MS_CLIENT_SECRET && REDIRECT_URI);
+      return new Response(
+        JSON.stringify({ 
+          status: isConfigured ? 'complete' : 'incomplete',
+          details: {
+            client_id: !!MS_CLIENT_ID,
+            client_secret: !!MS_CLIENT_SECRET,
+            redirect_uri: !!REDIRECT_URI
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // All other endpoints require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -78,8 +84,19 @@ serve(async (req) => {
       );
     }
 
-    const body = await req.json();
-    const { path } = body;
+    // Validate required environment variables
+    if (!MS_CLIENT_ID || !MS_CLIENT_SECRET) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Microsoft OAuth configuration is incomplete', 
+          details: 'Missing client ID or secret' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     switch (path) {
       case 'authorize': {

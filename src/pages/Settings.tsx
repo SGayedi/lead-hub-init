@@ -57,12 +57,18 @@ export default function Settings() {
         method: 'POST',
         body: { path: 'authorize' },
       });
-      
+
       if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      if (response.data && response.data.url) {
+        if (response.error.message.includes('OAuth configuration is incomplete')) {
+          toast({
+            title: "Setup Required",
+            description: "Microsoft OAuth credentials are not configured. Please contact your administrator.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(response.error.message);
+        }
+      } else if (response.data && response.data.url) {
         window.location.href = response.data.url;
       } else {
         throw new Error("Failed to get authorization URL");
@@ -72,6 +78,7 @@ export default function Settings() {
       toast({
         title: "Connection Error",
         description: "Failed to connect to Outlook. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -342,4 +349,3 @@ export default function Settings() {
     </div>
   );
 }
-
