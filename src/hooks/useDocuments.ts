@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Document, EntityType } from '@/types/crm';
+import { Document } from '@/types/crm';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
@@ -23,7 +24,7 @@ const convertDbDocumentToDocument = (dbDocument: any): Document => ({
 
 interface DocumentFilter {
   relatedEntityId?: string;
-  relatedEntityType?: "lead" | "meeting";
+  relatedEntityType?: "lead" | "meeting" | "opportunity";
   searchTerm?: string;
 }
 
@@ -71,7 +72,7 @@ export function useDocuments(filter: DocumentFilter = {}) {
     }: { 
       file: File, 
       relatedEntityId: string, 
-      relatedEntityType: "lead" | "meeting",
+      relatedEntityType: "lead" | "meeting" | "opportunity",
       existingDocumentId?: string
     }) => {
       if (!user) throw new Error('User not authenticated');

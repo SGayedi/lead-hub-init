@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { UploadCloud, FileText, Trash2, Download, Eye, History, ArrowUpCircle } from 'lucide-react';
@@ -74,7 +73,6 @@ export function DocumentUploader({
     
     const file = files[0];
     
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('File size exceeds 10MB limit');
       return;
@@ -94,7 +92,6 @@ export function DocumentUploader({
         });
       }
       
-      // Reset file input and state
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
