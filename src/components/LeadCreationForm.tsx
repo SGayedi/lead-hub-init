@@ -24,7 +24,7 @@ interface LeadCreationFormProps {
     notes?: string;
     source?: LeadSource;
   };
-  onSuccess?: () => void;
+  onSuccess?: (leadId?: string) => void;
 }
 
 export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormProps) {
@@ -86,7 +86,7 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
 
   const createLead = useMutation({
     mutationFn: async (data: typeof formData & { status?: string }) => {
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from("leads")
         .insert([{
           name: data.name,
@@ -99,14 +99,17 @@ export function LeadCreationForm({ initialData, onSuccess }: LeadCreationFormPro
           email: data.email,
           phone: data.phone,
           notes: data.notes,
-        }]);
+        }])
+        .select('id');
 
       if (error) throw error;
+      
+      return insertData?.[0]?.id;
     },
-    onSuccess: () => {
+    onSuccess: (leadId) => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       toast.success("Lead created successfully");
-      onSuccess?.();
+      if (onSuccess) onSuccess(leadId);
     },
     onError: () => {
       toast.error("Failed to create lead");

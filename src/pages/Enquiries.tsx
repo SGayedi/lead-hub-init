@@ -378,31 +378,9 @@ export default function Enquiries() {
                                 notes: selectedEmail?.body || "",
                                 source: "outlook",
                               }}
-                              onSuccess={(leadId: string) => {
+                              onSuccess={() => {
                                 setSelectedEmail(null);
                                 setShowLeadCreation(false);
-                                
-                                if (selectedEmail) {
-                                  supabase
-                                    .from('outlook_emails')
-                                    .update({ 
-                                      associated_lead_id: leadId,
-                                      is_enquiry: true 
-                                    })
-                                    .eq('id', selectedEmail.id)
-                                    .then(() => {
-                                      setEmails(prev => 
-                                        prev.map(email => 
-                                          email.id === selectedEmail.id 
-                                            ? { ...email, associated_lead_id: leadId, is_enquiry: true } 
-                                            : email
-                                        )
-                                      );
-                                    })
-                                    .catch(error => {
-                                      console.error("Error connecting email to new lead:", error);
-                                    });
-                                }
                               }}
                             />
                           </div>
