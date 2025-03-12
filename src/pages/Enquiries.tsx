@@ -33,8 +33,7 @@ export default function Enquiries() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .rpc('get_gmail_emails')
-        .order('received_at', { ascending: false });
+        .rpc('get_gmail_emails');
       
       if (error) {
         throw error;
@@ -87,36 +86,6 @@ export default function Enquiries() {
     }
   };
 
-  const findMatchingLeads = async (email: GmailEmail) => {
-    try {
-      const domain = email.sender_email.split('@')[1];
-      
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .or(`email.ilike.%${domain}%,name.ilike.%${email.sender_name.split(' ')[0]}%`);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setMatchingLeads(data as Lead[]);
-      } else {
-        setMatchingLeads([]);
-      }
-    } catch (error) {
-      console.error("Error finding matching leads:", error);
-    }
-  };
-
-  const handleConvertToLead = async (email: GmailEmail) => {
-    setSelectedEmail(email);
-    await findMatchingLeads(email);
-    
-    if (matchingLeads.length === 0) {
-      setShowLeadCreation(true);
-    }
-  };
-
   const handleConnectToExistingLead = async (leadId: string) => {
     if (!selectedEmail) return;
     
@@ -150,6 +119,36 @@ export default function Enquiries() {
         title: "Error",
         description: "Failed to connect enquiry to lead. Please try again.",
       });
+    }
+  };
+
+  const findMatchingLeads = async (email: GmailEmail) => {
+    try {
+      const domain = email.sender_email.split('@')[1];
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .or(`email.ilike.%${domain}%,name.ilike.%${email.sender_name.split(' ')[0]}%`);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setMatchingLeads(data as Lead[]);
+      } else {
+        setMatchingLeads([]);
+      }
+    } catch (error) {
+      console.error("Error finding matching leads:", error);
+    }
+  };
+
+  const handleConvertToLead = async (email: GmailEmail) => {
+    setSelectedEmail(email);
+    await findMatchingLeads(email);
+    
+    if (matchingLeads.length === 0) {
+      setShowLeadCreation(true);
     }
   };
 

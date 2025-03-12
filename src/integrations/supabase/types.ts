@@ -78,6 +78,59 @@ export type Database = {
         }
         Relationships: []
       }
+      gmail_emails: {
+        Row: {
+          associated_lead_id: string | null
+          body: string
+          created_at: string
+          has_attachments: boolean
+          id: string
+          is_enquiry: boolean
+          read: boolean
+          received_at: string
+          sender_email: string
+          sender_name: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          associated_lead_id?: string | null
+          body: string
+          created_at?: string
+          has_attachments?: boolean
+          id: string
+          is_enquiry?: boolean
+          read?: boolean
+          received_at: string
+          sender_email: string
+          sender_name: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          associated_lead_id?: string | null
+          body?: string
+          created_at?: string
+          has_attachments?: boolean
+          id?: string
+          is_enquiry?: boolean
+          read?: boolean
+          received_at?: string
+          sender_email?: string
+          sender_name?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gmail_emails_associated_lead_id_fkey"
+            columns: ["associated_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gmail_tokens: {
         Row: {
           access_token: string
@@ -358,9 +411,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      connect_email_to_lead: {
+        Args: {
+          email_id: string
+          lead_id: string
+        }
+        Returns: undefined
+      }
       create_gmail_emails_if_not_exists: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_gmail_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          associated_lead_id: string | null
+          body: string
+          created_at: string
+          has_attachments: boolean
+          id: string
+          is_enquiry: boolean
+          read: boolean
+          received_at: string
+          sender_email: string
+          sender_name: string
+          subject: string
+          updated_at: string
+        }[]
       }
       get_user_role: {
         Args: Record<PropertyKey, never>
@@ -369,6 +446,12 @@ export type Database = {
       is_senior_management: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      mark_email_as_enquiry: {
+        Args: {
+          email_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

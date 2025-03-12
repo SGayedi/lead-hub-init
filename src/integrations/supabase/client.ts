@@ -9,3 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Add type declarations for our RPC functions
+declare module '@supabase/supabase-js' {
+  interface SupabaseClient {
+    rpc<T = any>(
+      fn: 'get_gmail_emails' | 'mark_email_as_enquiry' | 'connect_email_to_lead',
+      params?: Record<string, unknown>
+    ): Promise<{ data: T; error: null } | { data: null; error: Error }>;
+  }
+}
