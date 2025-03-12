@@ -71,6 +71,11 @@ html.dark {
   transition-duration: 100ms;
 }
 
+/* Custom styles for auth buttons in dark mode */
+.dark .auth-button {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
