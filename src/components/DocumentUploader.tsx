@@ -65,7 +65,8 @@ export function DocumentUploader({
     previewDocument,
     previewUrl,
     previewDocumentVersion,
-    clearPreview
+    clearPreview,
+    refetch
   } = useDocuments({
     relatedEntityId,
     relatedEntityType
@@ -123,7 +124,17 @@ export function DocumentUploader({
   
   const handleDeleteDocument = async (document: any) => {
     if (window.confirm(`Are you sure you want to delete ${document.name}?`)) {
-      await deleteDocument.mutateAsync(document);
+      try {
+        await deleteDocument.mutateAsync(document);
+        await refetch();
+        
+        if (previewDocument && previewDocument.id === document.id) {
+          clearPreview();
+        }
+      } catch (error: any) {
+        console.error('Error deleting document:', error);
+        toast.error(`Failed to delete document: ${error.message}`);
+      }
     }
   };
   

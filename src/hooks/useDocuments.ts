@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,17 +200,31 @@ export function useDocuments(filter: DocumentFilter = {}) {
 
   const deleteDocument = useMutation({
     mutationFn: async (document: Document) => {
+      console.log("Deleting document:", document.id, document.filePath);
+      
       // 1. Delete file from storage
       const { error: storageError } = await supabase.storage
         .from('documents')
         .remove([document.filePath]);
       
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error("Storage deletion error:", storageError);
+        throw storageError;
+      }
       
-      // Delete all version history files
+      // Delete all version history files if they exist
       if (document.versionHistory && document.versionHistory.length > 0) {
         const paths = document.versionHistory.map(v => v.path);
-        await supabase.storage.from('documents').remove(paths);
+        if (paths.length > 0) {
+          const { error: historyError } = await supabase.storage
+            .from('documents')
+            .remove(paths);
+            
+          if (historyError) {
+            console.warn("Error deleting version history files:", historyError);
+            // Continue with database deletion even if history file deletion fails
+          }
+        }
       }
       
       // 2. Delete document record from database
@@ -218,13 +233,21 @@ export function useDocuments(filter: DocumentFilter = {}) {
         .delete()
         .eq('id', document.id);
       
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database deletion error:", dbError);
+        throw dbError;
+      }
+      
+      console.log("Document successfully deleted");
+      return document.id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId) => {
+      console.log("Invalidating documents query after deletion");
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       toast.success('Document deleted successfully');
     },
     onError: (error) => {
+      console.error("Document deletion failed:", error);
       toast.error(`Failed to delete document: ${error.message}`);
     }
   });
