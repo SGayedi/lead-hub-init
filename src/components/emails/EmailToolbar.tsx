@@ -10,6 +10,7 @@ interface EmailToolbarProps {
   isLoading: boolean;
   isOutlookConnected: boolean | null;
   isConfigComplete: boolean;
+  configError?: string | null;
 }
 
 export function EmailToolbar({ 
@@ -17,7 +18,8 @@ export function EmailToolbar({
   authorizeOutlook, 
   isLoading,
   isOutlookConnected,
-  isConfigComplete
+  isConfigComplete,
+  configError
 }: EmailToolbarProps) {
   return (
     <div className="flex gap-2">
@@ -47,7 +49,7 @@ export function EmailToolbar({
           {!isConfigComplete && (
             <TooltipContent>
               <p>Microsoft OAuth configuration is incomplete.</p>
-              <p>Please set up MS_CLIENT_ID, MS_CLIENT_SECRET, and REDIRECT_URI.</p>
+              <p>{configError || "Please set up MS_CLIENT_ID, MS_CLIENT_SECRET, and REDIRECT_URI."}</p>
             </TooltipContent>
           )}
         </Tooltip>

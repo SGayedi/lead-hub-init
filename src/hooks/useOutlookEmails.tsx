@@ -21,6 +21,7 @@ export function useOutlookEmails() {
   const [emails, setEmails] = useState<OutlookEmail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -108,8 +109,35 @@ export function useOutlookEmails() {
     }
 
     setIsLoading(true);
+    setConfigError(null);
     
     try {
+      // First check if setup is complete
+      const setupCheck = await supabase.functions.invoke('microsoft-auth', {
+        method: 'POST',
+        body: { path: 'check-setup' },
+      });
+      
+      if (!setupCheck.data?.status || setupCheck.data.status === 'incomplete') {
+        const missingItems = [];
+        const details = setupCheck.data?.details || {};
+        
+        if (!details.client_id) missingItems.push('MS_CLIENT_ID');
+        if (!details.client_secret) missingItems.push('MS_CLIENT_SECRET');
+        if (!details.redirect_uri) missingItems.push('REDIRECT_URI');
+        
+        const errorMsg = `Missing configuration: ${missingItems.join(', ')}`;
+        setConfigError(errorMsg);
+        
+        toast({
+          title: "Configuration Incomplete",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // Call the authorization endpoint to get the OAuth URL
       const { data, error } = await supabase.functions.invoke('microsoft-auth', {
         method: 'POST',
@@ -124,9 +152,11 @@ export function useOutlookEmails() {
       }
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
+      const errorMsg = err.message || 'Failed to connect to Outlook';
+      setConfigError(errorMsg);
       toast({
         title: "Authorization Failed",
-        description: err.message || 'Failed to connect to Outlook',
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -138,6 +168,7 @@ export function useOutlookEmails() {
     emails,
     isLoading,
     error,
+    configError,
     syncEmails,
     fetchEmails,
     authorizeOutlook

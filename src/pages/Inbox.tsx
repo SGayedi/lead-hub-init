@@ -23,7 +23,7 @@ export default function Inbox() {
   const itemsPerPage = 10;
   
   // Use our custom hooks
-  const { emails, isLoading, error, syncEmails, fetchEmails, authorizeOutlook } = useOutlookEmails();
+  const { emails, isLoading, error, configError, syncEmails, fetchEmails, authorizeOutlook } = useOutlookEmails();
   
   // Process Outlook OAuth callback if needed - moved to the top level
   useOutlookAuth();
@@ -80,6 +80,7 @@ export default function Inbox() {
           isLoading={isLoading}
           isOutlookConnected={isOutlookConnected}
           isConfigComplete={isConfigComplete}
+          configError={configError}
         />
       </div>
 
