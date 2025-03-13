@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,17 +73,15 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // Use a direct query instead of rpc to get around TypeScript limitations
+      // Use the SQL function to fetch emails
       const { data, error: fetchError } = await supabase
-        .from('outlook_emails')
-        .select('*')
-        .order('received_at', { ascending: false });
+        .rpc('get_outlook_emails');
       
       if (fetchError) throw fetchError;
       
       if (data) {
-        // Explicitly cast to ensure TypeScript understands this is an array of the expected type
-        const typedEmails: OutlookEmail[] = data as any[];
+        // Handle the response data being of the correct type
+        const typedEmails = data as OutlookEmail[];
         setEmails(typedEmails);
       } else {
         setEmails([]);
