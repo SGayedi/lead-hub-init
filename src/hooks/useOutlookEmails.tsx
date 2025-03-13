@@ -143,7 +143,8 @@ export function useOutlookEmails() {
         if (!details.client_secret) missingItems.push('MS_CLIENT_SECRET');
         if (!details.redirect_uri) missingItems.push('REDIRECT_URI');
         
-        const errorMsg = `Missing or invalid configuration: ${missingItems.join(', ')}`;
+        const errorMsg = `Missing or invalid Microsoft OAuth configuration: ${missingItems.join(', ')}`;
+        console.error(errorMsg);
         setConfigError(errorMsg);
         
         toast({

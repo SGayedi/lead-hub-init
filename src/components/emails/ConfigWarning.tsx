@@ -12,7 +12,7 @@ export function ConfigWarning({ isConfigComplete, configError }: ConfigWarningPr
   if (isConfigComplete) return null;
   
   const specificError = configError 
-    ? <p className="font-medium">{configError}</p> 
+    ? <p className="font-medium text-red-500">{configError}</p> 
     : null;
   
   return (
@@ -27,7 +27,7 @@ export function ConfigWarning({ isConfigComplete, configError }: ConfigWarningPr
           <li>The credentials are invalid or have expired</li>
           <li>The redirect URI may not match what's configured in your Azure portal</li>
         </ul>
-        <p className="text-sm mt-2">Please check that your credentials are correctly configured in your Supabase Edge Function secrets.</p>
+        <p className="text-sm mt-2">Check the Edge Function logs for more detailed error information.</p>
       </AlertDescription>
     </Alert>
   );

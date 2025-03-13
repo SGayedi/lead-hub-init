@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -24,15 +25,15 @@ const getRedirectUri = (req) => {
     return `${url.origin}/inbox`;
   } catch (e) {
     console.error("Could not extract origin from request URL:", e);
-    return "http://localhost:8080/inbox"; // Fallback
+    return "http://localhost:3000/inbox"; // Fallback
   }
 };
 
-// Print environment variables for debugging (excluding secrets)
+// Debug logging for environment variables
 console.log("Edge function environment debugging:");
-console.log(`MS_CLIENT_ID present: ${!!MS_CLIENT_ID}`);
-console.log(`MS_CLIENT_SECRET present: ${!!MS_CLIENT_SECRET}`);
-console.log(`REDIRECT_URI present: ${!!REDIRECT_URI}`);
+console.log(`MS_CLIENT_ID present: ${!!MS_CLIENT_ID} ${MS_CLIENT_ID ? `(${MS_CLIENT_ID.substring(0, 5)}...)` : ""}`);
+console.log(`MS_CLIENT_SECRET present: ${!!MS_CLIENT_SECRET} ${MS_CLIENT_SECRET ? "(secret)" : ""}`);
+console.log(`REDIRECT_URI present: ${!!REDIRECT_URI} ${REDIRECT_URI ? `(${REDIRECT_URI})` : ""}`);
 console.log(`SUPABASE_URL present: ${!!SUPABASE_URL}`);
 console.log(`SUPABASE_ANON_KEY present: ${!!SUPABASE_ANON_KEY}`);
 
@@ -121,24 +122,32 @@ serve(async (req) => {
     switch (path) {
       case 'authorize': {
         console.log('Handling authorize request');
-        // Generate Microsoft OAuth URL
-        const scope = encodeURIComponent('offline_access Mail.Read');
-        
-        // Get the appropriate redirect URI
-        const redirectUri = getRedirectUri(req);
-        console.log('Using redirect URI:', redirectUri);
-        
-        // Ensure the redirect URI is properly encoded
-        const encodedRedirectUri = encodeURIComponent(redirectUri);
-        
-        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
-        
-        console.log('Generated auth URL:', authUrl);
-        
-        return new Response(
-          JSON.stringify({ url: authUrl }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        try {
+          // Generate Microsoft OAuth URL
+          const scope = encodeURIComponent('offline_access Mail.Read');
+          
+          // Get the appropriate redirect URI
+          const redirectUri = getRedirectUri(req);
+          console.log('Using redirect URI:', redirectUri);
+          
+          // Ensure the redirect URI is properly encoded
+          const encodedRedirectUri = encodeURIComponent(redirectUri);
+          
+          const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
+          
+          console.log('Generated auth URL:', authUrl);
+          
+          return new Response(
+            JSON.stringify({ url: authUrl }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (error) {
+          console.error('Error generating authorize URL:', error);
+          return new Response(
+            JSON.stringify({ error: `Error generating authorize URL: ${error.message}` }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
       
       case 'callback': {
