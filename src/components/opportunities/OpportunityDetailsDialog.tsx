@@ -26,7 +26,9 @@ export function OpportunityDetailsDialog({
   if (!opportunity) return null;
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <OpportunityDialogHeader 
           opportunity={opportunity}

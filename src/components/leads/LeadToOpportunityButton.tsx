@@ -28,7 +28,15 @@ export function LeadToOpportunityButton({ lead, onSuccess }: LeadToOpportunityBu
           { lead_id_param: lead.id }
         );
 
-        if (error) throw error;
+        if (error) {
+          console.error("Conversion error:", error);
+          throw new Error(error.message || "Failed to convert lead");
+        }
+        
+        if (!data) {
+          throw new Error("No data returned from conversion");
+        }
+        
         return data;
       } finally {
         setIsProcessing(false);
@@ -40,8 +48,9 @@ export function LeadToOpportunityButton({ lead, onSuccess }: LeadToOpportunityBu
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
       if (onSuccess) onSuccess();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(`Failed to convert lead: ${error.message}`);
+      console.error("Conversion error details:", error);
     },
   });
 
