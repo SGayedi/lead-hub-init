@@ -11,11 +11,11 @@ interface EmailRowProps {
 export function EmailRow({ email }: EmailRowProps) {
   return (
     <TableRow 
-      className={`cursor-pointer ${!email.read ? 'font-medium' : ''}`}
+      className={`cursor-pointer hover:bg-muted/50 ${!email.read ? 'font-medium' : ''}`}
     >
-      <TableCell className="font-medium">{email.sender_name}</TableCell>
-      <TableCell>{email.subject}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="font-medium text-foreground">{email.sender_name}</TableCell>
+      <TableCell className="text-foreground">{email.subject}</TableCell>
+      <TableCell className="text-right text-muted-foreground">
         {format(new Date(email.received_at), 'MMM d')}
       </TableCell>
     </TableRow>

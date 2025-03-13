@@ -28,7 +28,7 @@ export function EmailsList({
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-card border-border">
         <CardContent className="flex items-center justify-center py-6">
           <p className="text-muted-foreground flex items-center">
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -41,7 +41,7 @@ export function EmailsList({
 
   if (error) {
     return (
-      <Card>
+      <Card className="bg-card border-border">
         <CardContent className="py-6">
           <p className="text-center text-destructive">{error}</p>
         </CardContent>
@@ -63,7 +63,7 @@ export function EmailsList({
   }
 
   return (
-    <Card>
+    <Card className="bg-card border-border">
       <CardContent className="p-0">
         <Table>
           <TableHeader>

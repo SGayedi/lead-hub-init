@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Mail } from "lucide-react";
@@ -22,13 +21,10 @@ export default function Inbox() {
   const [isConfigComplete, setIsConfigComplete] = useState<boolean>(true);
   const itemsPerPage = 10;
   
-  // Use our custom hooks
   const { emails, isLoading, error, configError, syncEmails, fetchEmails, authorizeOutlook } = useOutlookEmails();
   
-  // Process Outlook OAuth callback if needed - moved to the top level
   useOutlookAuth();
   
-  // Check if Outlook is connected
   useEffect(() => {
     async function checkOutlookConnection() {
       try {
@@ -45,33 +41,28 @@ export default function Inbox() {
     checkOutlookConnection();
   }, []);
   
-  // Load emails when the component mounts or tab changes
   useEffect(() => {
-    // Only fetch emails if Outlook is connected
     if (isOutlookConnected) {
       fetchEmails(activeTab);
     }
   }, [activeTab, fetchEmails, isOutlookConnected]);
 
-  // Update the active tab when the URL changes
   useEffect(() => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
   
-  // Update the URL when the tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });
-    setCurrentPage(1); // Reset to first page when changing tabs
+    setCurrentPage(1);
   };
 
-  // Calculate pagination
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const totalPages = Math.ceil(emails.length / itemsPerPage);
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6 text-foreground bg-background">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Email</h1>
         <EmailToolbar 
@@ -84,7 +75,7 @@ export default function Inbox() {
         />
       </div>
 
-      <ConfigWarning isConfigComplete={isConfigComplete} />
+      <ConfigWarning isConfigComplete={isConfigComplete} configError={configError} />
 
       <EmailTabs activeTab={activeTab} onTabChange={handleTabChange} />
 

@@ -16,7 +16,7 @@ export function ConfigWarning({ isConfigComplete, configError }: ConfigWarningPr
     : null;
   
   return (
-    <Alert variant="destructive">
+    <Alert variant="destructive" className="border-red-500 bg-red-50 dark:bg-red-900/20">
       <AlertTriangle className="h-4 w-4" />
       <AlertTitle>Microsoft OAuth Configuration Issue</AlertTitle>
       <AlertDescription className="space-y-2">
