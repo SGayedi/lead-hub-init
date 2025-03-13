@@ -2,7 +2,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { OutlookEmail } from "@/hooks/useOutlookEmails";
+import { OutlookEmail } from "@/types/outlook";
 
 interface EmailRowProps {
   email: OutlookEmail;

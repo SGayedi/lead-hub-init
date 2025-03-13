@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyInboxState } from "./EmptyInboxState";
 import { EmailRow } from "./EmailRow";
-import { OutlookEmail } from "@/hooks/useOutlookEmails";
+import { OutlookEmail } from "@/types/outlook";
 
 interface EmailsListProps {
   emails: OutlookEmail[];
