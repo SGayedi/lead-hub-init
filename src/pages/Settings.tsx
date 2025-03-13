@@ -100,17 +100,6 @@ export default function Settings() {
                 )}
               </div>
             </div>
-            
-            {/* Gmail - Placeholder for future implementation */}
-            <div className="flex justify-between items-center opacity-50">
-              <div>
-                <h3 className="font-medium">Gmail</h3>
-                <p className="text-sm text-muted-foreground">Coming soon</p>
-              </div>
-              <Button variant="outline" disabled>
-                Connect Gmail
-              </Button>
-            </div>
           </CardContent>
           <CardFooter className="flex justify-center border-t pt-4">
             <p className="text-xs text-center text-muted-foreground">
