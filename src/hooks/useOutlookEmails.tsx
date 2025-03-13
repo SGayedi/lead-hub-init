@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,13 +72,10 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // TypeScript doesn't recognize the table or RPC function, so we need to use a raw query
-      // We'll use executeQuery which is more flexible with TypeScript
+      // Use a raw SQL query to bypass TypeScript type checking
       const { data, error: fetchError } = await supabase
-        .from('outlook_emails')
-        .select('*')
-        .order('received_at', { ascending: false }) as { data: OutlookEmail[] | null, error: any };
-        
+        .rpc('get_outlook_emails') as { data: OutlookEmail[] | null, error: any };
+      
       if (fetchError) throw fetchError;
       
       if (data) {
