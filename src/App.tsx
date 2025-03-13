@@ -18,6 +18,7 @@ import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import "./App.css";
 import Calendar from "./pages/Calendar";
 import Opportunities from "./pages/Opportunities";
+import Inbox from "./pages/Inbox";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ function App() {
                 <Route path="meetings" element={<Meetings />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="opportunities" element={<Opportunities />} />
+                <Route path="inbox" element={<Inbox />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />

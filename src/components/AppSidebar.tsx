@@ -1,5 +1,5 @@
 
-import { Home, Users, Settings, Calendar, Briefcase } from "lucide-react";
+import { Home, Users, Settings, Calendar, Briefcase, Inbox } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,11 @@ const menuItems = [
     title: "Opportunities",
     icon: Briefcase,
     path: "/opportunities",
+  },
+  {
+    title: "Inbox",
+    icon: Inbox,
+    path: "/inbox",
   },
   {
     title: "Calendar",
