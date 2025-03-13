@@ -1,4 +1,3 @@
-
 export type Role = "investor_services" | "legal_services" | "property_development" | "senior_management";
 
 export type InquiryType = "company" | "individual";
@@ -31,7 +30,6 @@ export interface Lead {
   updated_at: string;
 }
 
-// New types for Version 4
 export type OpportunityStatus = 
   | "assessment_in_progress" 
   | "assessment_completed" 
@@ -70,6 +68,19 @@ export interface Opportunity {
   site_visit_scheduled: boolean;
   site_visit_date?: string;
   site_visit_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OpportunityApproval {
+  id: string;
+  opportunity_id: string;
+  approved_by: string;
+  approved_at: string;
+  comments?: string;
+  stage: string;
+  is_final: boolean;
+  approver_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -277,4 +288,13 @@ export interface Comment {
   relatedEntityType: EntityType;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RecordLock {
+  id: string;
+  entityType: string;
+  entityId: string;
+  lockedBy: string;
+  lockedAt: string;
+  expiresAt: string;
 }

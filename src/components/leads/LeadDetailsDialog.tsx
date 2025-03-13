@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog,
   DialogContent
@@ -13,6 +13,8 @@ import { LeadDialogHeader } from "@/components/leads/LeadDialogHeader";
 import { LeadDetailsTab } from "@/components/leads/LeadDetailsTab";
 import { LeadDocumentsTab } from "@/components/leads/LeadDocumentsTab";
 import { LeadTasksTab } from "@/components/leads/LeadTasksTab";
+import { useRecordLocks } from "@/hooks/useRecordLocks";
+import { RecordLockAlert } from "@/components/RecordLockAlert";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
@@ -32,6 +34,29 @@ export function LeadDetailsDialog({ lead, isOpen, onClose, onLeadUpdated }: Lead
     handleSave,
     handleCancel
   } = useLeadEditor(lead, onLeadUpdated);
+  
+  const { acquireLock, releaseLock, checkLock } = useRecordLocks();
+  const { data: lockInfo } = lead ? checkLock("lead", lead.id) : { data: null };
+  
+  // Acquire a lock when opening the dialog or entering edit mode
+  useEffect(() => {
+    if (isOpen && lead) {
+      acquireLock.mutate({
+        entityType: "lead",
+        entityId: lead.id
+      });
+      
+      // Release the lock when closing the dialog
+      return () => {
+        releaseLock.mutate({
+          entityType: "lead",
+          entityId: lead.id
+        });
+      };
+    }
+  }, [isOpen, lead, isEditMode]);
+  
+  const isLockedByOther = lockInfo?.locked;
 
   if (!lead) return null;
 
@@ -46,6 +71,16 @@ export function LeadDetailsDialog({ lead, isOpen, onClose, onLeadUpdated }: Lead
           onSave={handleSave}
           onCancel={handleCancel}
         />
+        
+        {isLockedByOther && lockInfo.locked_by && (
+          <RecordLockAlert 
+            lockedBy={{
+              name: lockInfo.locked_by.name,
+              email: lockInfo.locked_by.email
+            }}
+            expiresAt={lockInfo.expires_at!}
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="grid grid-cols-4">
@@ -67,7 +102,7 @@ export function LeadDetailsDialog({ lead, isOpen, onClose, onLeadUpdated }: Lead
           <TabsContent value="details" className="space-y-4 mt-4">
             <LeadDetailsTab 
               lead={lead}
-              isEditMode={isEditMode}
+              isEditMode={isEditMode && !isLockedByOther}
               editedLead={editedLead}
               setEditedLead={setEditedLead}
             />

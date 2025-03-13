@@ -649,6 +649,50 @@ export type Database = {
           },
         ]
       }
+      opportunity_approvals: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          comments: string | null
+          created_at: string
+          id: string
+          is_final: boolean
+          opportunity_id: string
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          opportunity_id: string
+          stage: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean
+          opportunity_id?: string
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_approvals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -673,6 +717,33 @@ export type Database = {
           id?: string
           role?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      record_locks: {
+        Row: {
+          entity_id: string
+          entity_type: string
+          expires_at: string
+          id: string
+          locked_at: string
+          locked_by: string
+        }
+        Insert: {
+          entity_id: string
+          entity_type: string
+          expires_at: string
+          id?: string
+          locked_at?: string
+          locked_by: string
+        }
+        Update: {
+          entity_id?: string
+          entity_type?: string
+          expires_at?: string
+          id?: string
+          locked_at?: string
+          locked_by?: string
         }
         Relationships: []
       }
@@ -759,6 +830,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_record_lock: {
+        Args: {
+          entity_type_param: string
+          entity_id_param: string
+          lock_duration_minutes?: number
+        }
+        Returns: boolean
+      }
+      clean_expired_record_locks: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       connect_email_to_lead: {
         Args: {
           email_id: string
@@ -797,6 +880,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_record_locked_by_other: {
+        Args: {
+          entity_type_param: string
+          entity_id_param: string
+        }
+        Returns: Json
+      }
       is_senior_management: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -806,6 +896,13 @@ export type Database = {
           email_id: string
         }
         Returns: undefined
+      }
+      release_record_lock: {
+        Args: {
+          entity_type_param: string
+          entity_id_param: string
+        }
+        Returns: boolean
       }
       update_opportunity_assessment_status: {
         Args: {
