@@ -7,7 +7,7 @@ interface OpportunityDocumentsTabProps {
 }
 
 export function OpportunityDocumentsTab({ opportunityId }: OpportunityDocumentsTabProps) {
-  const { refetch } = useDocuments({
+  const { documents, isLoading, refetch } = useDocuments({
     relatedEntityId: opportunityId,
     relatedEntityType: "opportunity"
   });

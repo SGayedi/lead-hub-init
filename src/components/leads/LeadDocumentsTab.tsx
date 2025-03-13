@@ -7,7 +7,7 @@ interface LeadDocumentsTabProps {
 }
 
 export function LeadDocumentsTab({ leadId }: LeadDocumentsTabProps) {
-  const { refetch } = useDocuments({
+  const { documents, isLoading, refetch } = useDocuments({
     relatedEntityId: leadId,
     relatedEntityType: "lead"
   });
