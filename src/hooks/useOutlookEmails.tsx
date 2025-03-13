@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -118,16 +118,22 @@ export function useOutlookEmails() {
     setConfigError(null);
     
     try {
-      // First check if setup is complete
-      const { data: setupData, error: setupError } = await supabase.functions.invoke('microsoft-auth', {
+      console.log('Starting Microsoft OAuth flow...');
+      
+      // First check if setup is complete with detailed logging
+      const checkSetupResponse = await supabase.functions.invoke('microsoft-auth', {
         method: 'POST',
         body: { path: 'check-setup' },
       });
       
-      if (setupError) {
-        console.error('Error checking setup:', setupError);
-        throw new Error(`Configuration check failed: ${setupError.message || 'Unknown error'}`);
+      console.log('Check setup response:', checkSetupResponse);
+      
+      if (checkSetupResponse.error) {
+        console.error('Error checking setup:', checkSetupResponse.error);
+        throw new Error(`Configuration check failed: ${checkSetupResponse.error.message || 'Unknown error'}`);
       }
+      
+      const setupData = checkSetupResponse.data;
       
       if (!setupData?.status || setupData.status === 'incomplete') {
         const missingItems = [];
@@ -137,7 +143,7 @@ export function useOutlookEmails() {
         if (!details.client_secret) missingItems.push('MS_CLIENT_SECRET');
         if (!details.redirect_uri) missingItems.push('REDIRECT_URI');
         
-        const errorMsg = `Missing configuration: ${missingItems.join(', ')}`;
+        const errorMsg = `Missing or invalid configuration: ${missingItems.join(', ')}`;
         setConfigError(errorMsg);
         
         toast({
@@ -149,22 +155,29 @@ export function useOutlookEmails() {
         return;
       }
       
+      console.log('Configuration is valid, proceeding to authorization...');
+      
       // Call the authorization endpoint to get the OAuth URL
-      const { data, error } = await supabase.functions.invoke('microsoft-auth', {
+      const authResponse = await supabase.functions.invoke('microsoft-auth', {
         method: 'POST',
         body: { path: 'authorize' },
       });
       
-      if (error) {
-        console.error('Error from edge function:', error);
-        throw new Error(`Authorization failed: ${error.message || 'Unknown error'}`);
+      console.log('Authorization response:', authResponse);
+      
+      if (authResponse.error) {
+        console.error('Error from edge function:', authResponse.error);
+        throw new Error(`Authorization failed: ${authResponse.error.message || 'Unknown error'}`);
       }
+      
+      const data = authResponse.data;
       
       if (data.error) {
         throw new Error(data.error);
       }
       
       if (data.url) {
+        console.log('Redirecting to OAuth URL:', data.url);
         // Redirect to Microsoft's OAuth page
         window.location.href = data.url;
       } else {

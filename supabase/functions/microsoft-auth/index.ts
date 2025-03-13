@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -29,19 +28,21 @@ const getRedirectUri = (req) => {
   }
 };
 
-// Validate required environment variables
-if (!MS_CLIENT_ID) {
-  console.error("Missing MS_CLIENT_ID environment variable");
-}
-if (!MS_CLIENT_SECRET) {
-  console.error("Missing MS_CLIENT_SECRET environment variable");
-}
+// Print environment variables for debugging (excluding secrets)
+console.log("Edge function environment debugging:");
+console.log(`MS_CLIENT_ID present: ${!!MS_CLIENT_ID}`);
+console.log(`MS_CLIENT_SECRET present: ${!!MS_CLIENT_SECRET}`);
+console.log(`REDIRECT_URI present: ${!!REDIRECT_URI}`);
+console.log(`SUPABASE_URL present: ${!!SUPABASE_URL}`);
+console.log(`SUPABASE_ANON_KEY present: ${!!SUPABASE_ANON_KEY}`);
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  
+  console.log(`Handling request for: ${req.url}`);
 
   try {
     // Initialize Supabase client
@@ -49,10 +50,18 @@ serve(async (req) => {
 
     const body = await req.json();
     const { path } = body;
+    
+    console.log(`Processing path: ${path}`);
 
     // Special endpoint for checking setup status that doesn't require authentication
     if (path === 'check-setup') {
+      console.log("Running check-setup endpoint");
+      console.log(`MS_CLIENT_ID: ${MS_CLIENT_ID ? "present" : "missing"}`);
+      console.log(`MS_CLIENT_SECRET: ${MS_CLIENT_SECRET ? "present" : "missing"}`);
+      console.log(`REDIRECT_URI: ${REDIRECT_URI ? REDIRECT_URI : "missing"}`);
+      
       const isConfigured = !!(MS_CLIENT_ID && MS_CLIENT_SECRET);
+      
       return new Response(
         JSON.stringify({ 
           status: isConfigured ? 'complete' : 'incomplete',
@@ -69,6 +78,7 @@ serve(async (req) => {
     // All other endpoints require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.log("No authorization header provided");
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -79,11 +89,14 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
+      console.log("Authentication error:", userError);
       return new Response(
         JSON.stringify({ error: 'Invalid auth token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log(`Authenticated user: ${user.id}`);
 
     // Validate required environment variables
     if (!MS_CLIENT_ID || !MS_CLIENT_SECRET) {
@@ -302,6 +315,7 @@ serve(async (req) => {
       }
 
       default:
+        console.log(`Invalid path: ${path}`);
         return new Response(
           JSON.stringify({ error: 'Invalid path' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

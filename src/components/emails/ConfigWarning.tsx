@@ -18,16 +18,16 @@ export function ConfigWarning({ isConfigComplete, configError }: ConfigWarningPr
   return (
     <Alert variant="destructive">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Microsoft OAuth Configuration Incomplete</AlertTitle>
+      <AlertTitle>Microsoft OAuth Configuration Issue</AlertTitle>
       <AlertDescription className="space-y-2">
         {specificError}
-        <p>The following environment variables need to be set in the Edge Function:</p>
+        <p>The system is having trouble connecting to Microsoft. This could be because:</p>
         <ul className="list-disc pl-5 mt-2">
-          <li><code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">MS_CLIENT_ID</code> - Your Microsoft Azure App Client ID</li>
-          <li><code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">MS_CLIENT_SECRET</code> - Your Microsoft Azure App Client Secret</li>
-          <li><code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">REDIRECT_URI</code> - The URL to redirect to after authentication (should match your app URL)</li>
+          <li>The credentials are not being correctly loaded in the Edge Function</li>
+          <li>The credentials are invalid or have expired</li>
+          <li>The redirect URI may not match what's configured in your Azure portal</li>
         </ul>
-        <p className="text-sm mt-2">These must be configured in your Supabase Edge Function secrets.</p>
+        <p className="text-sm mt-2">Please check that your credentials are correctly configured in your Supabase Edge Function secrets.</p>
       </AlertDescription>
     </Alert>
   );
