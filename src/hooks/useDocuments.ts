@@ -41,8 +41,11 @@ export function useDocuments(filter: DocumentFilter = {}) {
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // Create a specific query key that includes all filter parameters
+  const queryKey = ['documents', filter.relatedEntityId, filter.relatedEntityType, searchTerm, user?.id];
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['documents', filter.relatedEntityId, filter.relatedEntityType, searchTerm, user?.id],
+    queryKey,
     queryFn: async () => {
       if (!user) return [];
       
@@ -243,7 +246,8 @@ export function useDocuments(filter: DocumentFilter = {}) {
     },
     onSuccess: (deletedId) => {
       console.log("Invalidating documents query after deletion");
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      // Invalidate using the exact same query key structure for proper cache invalidation
+      queryClient.invalidateQueries({ queryKey });
       toast.success('Document deleted successfully');
     },
     onError: (error) => {
