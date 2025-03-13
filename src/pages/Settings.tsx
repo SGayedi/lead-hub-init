@@ -1,360 +1,140 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Link, RefreshCw, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { LanguageSelect } from "@/components/LanguageSelect";
-import { Lock, Bell, HelpCircle, User, Sun, Moon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { useOutlookAuth } from "@/hooks/useOutlookAuth";
+import { useOutlookEmails } from "@/hooks/useOutlookEmails";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useTheme } from "@/components/ThemeProvider";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const [microsoftStatus, setMicrosoftStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const { authorizeOutlook } = useOutlookEmails();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  // Process Outlook OAuth callback if present in URL
+  useOutlookAuth();
+
+  // Check if Microsoft is connected
   useEffect(() => {
-    const loadUserProfile = async () => {
-      if (!user) return;
-      
+    async function checkMicrosoftConnection() {
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("full_name, email, role")
-          .eq("id", user.id)
-          .single();
-          
+        const { data, error } = await supabase.from('outlook_tokens').select('id').limit(1);
+        
         if (error) throw error;
         
-        if (data) {
-          setName(data.full_name || "");
-          setEmail(data.email || user.email || "");
-          setRole(data.role || "");
-        }
-      } catch (error) {
-        console.error("Error loading user profile:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile information",
-          variant: "destructive",
-        });
+        setMicrosoftStatus(data && data.length > 0 ? 'connected' : 'disconnected');
+      } catch (err) {
+        console.error("Error checking Microsoft connection:", err);
+        setMicrosoftStatus('disconnected');
       }
-    };
-    
-    loadUserProfile();
-  }, [user]);
-
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: name,
-          email: email,
-        })
-        .eq("id", user.id);
-        
-      if (profileError) throw profileError;
-      
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile information",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
+    
+    checkMicrosoftConnection();
+  }, []);
+
+  const handleOutlookConnect = () => {
+    authorizeOutlook();
   };
 
-  const handleUpdatePassword = async () => {
-    if (!user) return;
-    
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New passwords don't match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUpdatingPassword(true);
+  const handleOutlookDisconnect = async () => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
+      const { error } = await supabase.from('outlook_tokens').delete().lt('id', Number.MAX_SAFE_INTEGER);
+      
       if (error) throw error;
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-
+      
+      setMicrosoftStatus('disconnected');
       toast({
-        title: "Success",
-        description: "Password updated successfully",
+        title: "Outlook Disconnected",
+        description: "Your Outlook account has been disconnected successfully.",
       });
-    } catch (error) {
-      console.error("Error updating password:", error);
+    } catch (err: any) {
+      console.error("Error disconnecting Outlook:", err);
       toast({
         title: "Error",
-        description: "Failed to update password",
+        description: err.message || "Failed to disconnect Outlook",
         variant: "destructive",
       });
-    } finally {
-      setIsUpdatingPassword(false);
     }
   };
 
   return (
-    <div className="animate-fade-in">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <div className="container py-6 space-y-6">
+      <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
       
-      <Tabs defaultValue="account" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="account" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Account
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Lock className="h-4 w-4" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="flex items-center gap-2">
-            {theme === "dark" ? (
-              <Moon className="h-4 w-4" />
-            ) : (
-              <Sun className="h-4 w-4" />
-            )}
-            Appearance
-          </TabsTrigger>
-          <TabsTrigger value="language" className="flex items-center gap-2">
-            <HelpCircle className="h-4 w-4" />
-            Language
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="account">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 max-w-xl">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Your name" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="your.email@example.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input id="role" placeholder="Your role" disabled value={role} />
-                </div>
-                <Button 
-                  className="w-fit" 
-                  onClick={handleSaveProfile}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="notifications">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 max-w-xl">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Receive email notifications when there's activity on your leads.
-                    </p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Approval Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when a lead requires your approval.
-                    </p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">New Enquiry Alerts</p>
-                    <p className="text-sm text-muted-foreground">
-                      Be alerted when new enquiries are received.
-                    </p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="security">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 max-w-xl">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <Input 
-                    id="current-password" 
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input 
-                    id="new-password" 
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input 
-                    id="confirm-password" 
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  className="w-fit"
-                  onClick={handleUpdatePassword}
-                  disabled={isUpdatingPassword || !newPassword || !confirmPassword}
-                >
-                  {isUpdatingPassword ? "Updating..." : "Update Password"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="appearance">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 max-w-xl">
-                <div className="space-y-3">
-                  <h3 className="text-lg font-medium">Theme</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Select your preferred theme for the CRM interface.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                    <div 
-                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "light" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
-                      onClick={() => setTheme("light")}
-                    >
-                      <div className="h-24 w-full bg-[#FFFFFF] border rounded-md flex items-center justify-center">
-                        <Sun className="h-8 w-8 text-black" />
-                      </div>
-                      <span className="font-medium">Light</span>
-                    </div>
-                    
-                    <div 
-                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "dark" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
-                      onClick={() => setTheme("dark")}
-                    >
-                      <div className="h-24 w-full bg-[#1A1F2C] border rounded-md flex items-center justify-center">
-                        <Moon className="h-8 w-8 text-white" />
-                      </div>
-                      <span className="font-medium">Dark</span>
-                    </div>
-                    
-                    <div 
-                      className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-3 transition-all hover:border-primary ${theme === "system" ? "border-primary ring-2 ring-primary ring-offset-2" : ""}`}
-                      onClick={() => setTheme("system")}
-                    >
-                      <div className="h-24 w-full bg-gradient-to-r from-[#FFFFFF] to-[#1A1F2C] border rounded-md flex items-center justify-center">
-                        <div className="flex">
-                          <Sun className="h-8 w-8 text-black" />
-                          <Moon className="h-8 w-8 text-white ml-2" />
-                        </div>
-                      </div>
-                      <span className="font-medium">System</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="language">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 max-w-xl">
-                <div className="space-y-2">
-                  <Label htmlFor="language">Interface Language</Label>
-                  <LanguageSelect />
-                </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Email Integration Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Integration
+            </CardTitle>
+            <CardDescription>
+              Connect your email accounts to sync messages
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Microsoft Outlook */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-medium">Microsoft Outlook</h3>
                 <p className="text-sm text-muted-foreground">
-                  The CRM supports English, Russian, Turkish, and Azerbaijani. 
-                  Changing the language will update all interface text.
+                  {microsoftStatus === 'checking' ? 'Checking connection status...' : 
+                   microsoftStatus === 'connected' ? 'Connected' : 'Not connected'}
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div>
+                {microsoftStatus === 'connected' ? (
+                  <Button variant="outline" onClick={handleOutlookDisconnect}>
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button onClick={handleOutlookConnect}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Connect Outlook
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* Gmail - Placeholder for future implementation */}
+            <div className="flex justify-between items-center opacity-50">
+              <div>
+                <h3 className="font-medium">Gmail</h3>
+                <p className="text-sm text-muted-foreground">Coming soon</p>
+              </div>
+              <Button variant="outline" disabled>
+                Connect Gmail
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center border-t pt-4">
+            <p className="text-xs text-center text-muted-foreground">
+              Email integrations allow you to sync and manage emails directly in the CRM
+            </p>
+          </CardFooter>
+        </Card>
+
+        {/* Application Settings - Placeholder for future settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Account Settings
+            </CardTitle>
+            <CardDescription>
+              Manage your account and preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center py-6 text-muted-foreground">
+              Account settings will be available in a future update
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
