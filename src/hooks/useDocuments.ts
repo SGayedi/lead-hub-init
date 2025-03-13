@@ -5,7 +5,6 @@ import { Document } from '@/types/crm';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
-// Convert database document to frontend Document type
 const convertDbDocumentToDocument = (dbDocument: any): Document => ({
   id: dbDocument.id,
   name: dbDocument.name,
@@ -27,7 +26,6 @@ interface DocumentFilter {
   searchTerm?: string;
 }
 
-// Define the return type for the upload mutation
 interface UploadResult {
   id: string;
   [key: string]: any;
@@ -40,7 +38,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Create a specific query key that includes all filter parameters
   const queryKey = ['documents', filter.relatedEntityId, filter.relatedEntityType, searchTerm, user?.id];
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -86,17 +83,14 @@ export function useDocuments(filter: DocumentFilter = {}) {
       if (!user) throw new Error('User not authenticated');
       
       try {
-        // If updating an existing document
         if (existingDocumentId) {
           const existingDoc = data?.find(d => d.id === existingDocumentId);
           if (!existingDoc) throw new Error('Document not found');
           
-          // Get existing document details to create new version
           const newVersion = (existingDoc.version || 1) + 1;
           const fileName = file.name;
           const filePath = `${relatedEntityType}/${relatedEntityId}/${newVersion}_${fileName}`;
           
-          // Store the old version information
           const oldVersionInfo = {
             version: existingDoc.version || 1,
             path: existingDoc.filePath,
@@ -106,7 +100,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
           
           const versionHistory = [...(existingDoc.versionHistory || []), oldVersionInfo];
           
-          // 1. Upload the new version
           const { error: uploadError, data: fileData } = await supabase.storage
             .from('documents')
             .upload(filePath, file, {
@@ -119,7 +112,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
             throw uploadError;
           }
           
-          // 2. Update the document record
           const { error: updateError } = await supabase
             .from('documents')
             .update({
@@ -133,19 +125,15 @@ export function useDocuments(filter: DocumentFilter = {}) {
             .eq('id', existingDocumentId);
           
           if (updateError) {
-            // If database update fails, try to delete the uploaded file
             console.error("Update error:", updateError);
             await supabase.storage.from('documents').remove([filePath]);
             throw updateError;
           }
           
-          // After successfully updating, return the document id
           return { id: existingDocumentId };
         } else {
-          // Creating a new document
           const filePath = `${relatedEntityType}/${relatedEntityId}/${file.name}`;
           
-          // 1. Upload file to storage
           const { error: uploadError, data: fileData } = await supabase.storage
             .from('documents')
             .upload(filePath, file, {
@@ -158,7 +146,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
             throw uploadError;
           }
           
-          // 2. Create document record in database
           const { data: insertedData, error: dbError } = await supabase
             .from('documents')
             .insert([{
@@ -176,13 +163,11 @@ export function useDocuments(filter: DocumentFilter = {}) {
             .single();
           
           if (dbError) {
-            // If database insert fails, try to delete the uploaded file
             console.error("Database error:", dbError);
             await supabase.storage.from('documents').remove([filePath]);
             throw dbError;
           }
           
-          // Return the document id
           return insertedData;
         }
       } catch (error) {
@@ -205,7 +190,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
       console.log("Deleting document:", document.id, document.filePath);
       
       try {
-        // 1. Delete file from storage
         const { error: storageError } = await supabase.storage
           .from('documents')
           .remove([document.filePath]);
@@ -215,7 +199,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
           throw storageError;
         }
         
-        // Delete all version history files if they exist
         if (document.versionHistory && document.versionHistory.length > 0) {
           const paths = document.versionHistory.map(v => v.path);
           if (paths.length > 0) {
@@ -225,12 +208,10 @@ export function useDocuments(filter: DocumentFilter = {}) {
               
             if (historyError) {
               console.warn("Error deleting version history files:", historyError);
-              // Continue with database deletion even if history file deletion fails
             }
           }
         }
         
-        // 2. Delete document record from database
         const { error: dbError } = await supabase
           .from('documents')
           .delete()
@@ -250,10 +231,13 @@ export function useDocuments(filter: DocumentFilter = {}) {
     },
     onSuccess: (deletedId) => {
       console.log("Invalidating documents query after deletion");
-      // Invalidate using the exact same query key structure for proper cache invalidation
+      toast.success('Document deleted successfully');
+      
       queryClient.invalidateQueries({ queryKey });
-      // Also invalidate all documents queries to be sure
+      queryClient.refetchQueries({ queryKey });
+      
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.refetchQueries({ queryKey: ['documents'] });
     },
     onError: (error: any) => {
       console.error("Document deletion failed:", error);
@@ -265,7 +249,7 @@ export function useDocuments(filter: DocumentFilter = {}) {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .createSignedUrl(filePath, 60); // URL valid for 60 seconds
+        .createSignedUrl(filePath, 60);
       
       if (error) {
         console.error("Signed URL error:", error);
