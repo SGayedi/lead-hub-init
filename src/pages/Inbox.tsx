@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Mail, Send, Archive, FileText, RefreshCw, LogIn } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +9,14 @@ import { Pagination, PaginationContent, PaginationItem, PaginationNext, Paginati
 import { format } from "date-fns";
 import { useOutlookEmails } from "@/hooks/useOutlookEmails";
 import { useOutlookAuth } from "@/hooks/useOutlookAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Inbox() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "inbox";
   const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isOutlookConnected, setIsOutlookConnected] = useState<boolean | null>(null);
   const itemsPerPage = 10;
   
   // Use our custom hooks
@@ -24,11 +25,29 @@ export default function Inbox() {
   // Process Outlook OAuth callback if needed - moved to the top level
   useOutlookAuth();
   
+  // Check if Outlook is connected
+  useEffect(() => {
+    async function checkOutlookConnection() {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-outlook-connection');
+        if (error) throw error;
+        setIsOutlookConnected(data?.connected || false);
+      } catch (err) {
+        console.error("Error checking Outlook connection:", err);
+        setIsOutlookConnected(false);
+      }
+    }
+    
+    checkOutlookConnection();
+  }, []);
+  
   // Load emails when the component mounts or tab changes
   useEffect(() => {
-    // Fetch emails for the active tab
-    fetchEmails(activeTab);
-  }, [activeTab, fetchEmails]);
+    // Only fetch emails if Outlook is connected
+    if (isOutlookConnected) {
+      fetchEmails(activeTab);
+    }
+  }, [activeTab, fetchEmails, isOutlookConnected]);
 
   // Update the active tab when the URL changes
   useEffect(() => {
@@ -53,7 +72,7 @@ export default function Inbox() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Email</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={syncEmails} disabled={isLoading}>
+          <Button variant="outline" onClick={syncEmails} disabled={isLoading || !isOutlookConnected}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Sync Emails
           </Button>
@@ -89,7 +108,32 @@ export default function Inbox() {
         </TabsList>
 
         <div className="mt-6">
-          {isLoading ? (
+          {isOutlookConnected === null ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-6">
+                <p className="text-muted-foreground flex items-center">
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Checking connection status...
+                </p>
+              </CardContent>
+            </Card>
+          ) : !isOutlookConnected ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center text-muted-foreground">No Outlook Account Connected</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center py-6 space-y-4">
+                <Mail className="h-24 w-24 text-muted-foreground/30" />
+                <p className="text-center text-muted-foreground">
+                  Connect your Outlook account to view and manage your emails.
+                </p>
+                <Button onClick={authorizeOutlook}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Connect Outlook
+                </Button>
+              </CardContent>
+            </Card>
+          ) : isLoading ? (
             <Card>
               <CardContent className="flex items-center justify-center py-6">
                 <p className="text-muted-foreground flex items-center">
