@@ -25,27 +25,36 @@ export function useOpportunityApprovals(opportunityId?: string) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['opportunity-approvals', opportunityId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get all the approvals
+      const { data: approvals, error: approvalsError } = await supabase
         .from('opportunity_approvals')
-        .select(`
-          *,
-          profiles:approved_by (
-            full_name
-          )
-        `)
+        .select('*')
         .eq('opportunity_id', opportunityId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (approvalsError) throw approvalsError;
       
-      // Transform the data to match our expected format
-      return data.map(item => {
-        const approverName = item.profiles ? item.profiles.full_name : undefined;
-        return {
-          ...item,
-          approver_name: approverName
-        } as OpportunityApproval;
+      // Then fetch the profiles separately to get the full names
+      const approverIds = approvals.map(approval => approval.approved_by);
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', approverIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Create a map of profile ids to names for quick lookup
+      const profileMap = new Map();
+      profiles.forEach(profile => {
+        profileMap.set(profile.id, profile.full_name);
       });
+      
+      // Join the data manually
+      return approvals.map(approval => ({
+        ...approval,
+        approver_name: profileMap.get(approval.approved_by)
+      })) as OpportunityApproval[];
     },
     enabled: !!opportunityId
   });
