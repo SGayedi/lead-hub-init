@@ -73,16 +73,17 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // Use a raw query to fetch emails since TypeScript doesn't recognize the table yet
+      // TypeScript doesn't recognize the table or RPC function, so we need to use a raw query
+      // We'll use executeQuery which is more flexible with TypeScript
       const { data, error: fetchError } = await supabase
-        .rpc('get_outlook_emails');
+        .from('outlook_emails')
+        .select('*')
+        .order('received_at', { ascending: false }) as { data: OutlookEmail[] | null, error: any };
         
       if (fetchError) throw fetchError;
       
       if (data) {
-        // Cast the data to our OutlookEmail type
-        const typedEmails = data as unknown as OutlookEmail[];
-        setEmails(typedEmails);
+        setEmails(data);
       } else {
         setEmails([]);
       }
