@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useOpportunityApprovals } from "@/hooks/useOpportunityApprovals";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,7 +60,7 @@ export function OpportunityApprovalTab({ opportunity }: OpportunityApprovalTabPr
     await createApproval.mutateAsync({
       opportunityId: opportunity.id,
       stage: selectedStage,
-      isFinal,
+      isFinal: isFinalApproval,
       comments
     });
     

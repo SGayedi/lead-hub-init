@@ -95,7 +95,8 @@ export function useRecordLocks() {
         
         if (error) throw error;
         
-        return data as LockInfo;
+        // Cast to LockInfo with type assertion to handle JSON response
+        return data as unknown as LockInfo;
       },
       enabled: !!entityType && !!entityId && !!user,
       refetchInterval: 30000, // Refetch every 30 seconds

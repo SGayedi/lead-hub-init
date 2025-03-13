@@ -38,10 +38,14 @@ export function useOpportunityApprovals(opportunityId?: string) {
       
       if (error) throw error;
       
-      return data.map(item => ({
-        ...item,
-        approver_name: item.profiles?.full_name
-      })) as OpportunityApproval[];
+      // Transform the data to match our expected format
+      return data.map(item => {
+        const approverName = item.profiles ? item.profiles.full_name : undefined;
+        return {
+          ...item,
+          approver_name: approverName
+        } as OpportunityApproval;
+      });
     },
     enabled: !!opportunityId
   });
