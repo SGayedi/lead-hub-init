@@ -73,11 +73,9 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // Use a direct query instead of RPC to work around TypeScript limitations
+      // Use a raw query to fetch emails since TypeScript doesn't recognize the table yet
       const { data, error: fetchError } = await supabase
-        .from('outlook_emails')
-        .select('*')
-        .order('received_at', { ascending: false });
+        .rpc('get_outlook_emails');
         
       if (fetchError) throw fetchError;
       
