@@ -20,11 +20,12 @@ export default function Settings() {
   useEffect(() => {
     async function checkMicrosoftConnection() {
       try {
-        const { data, error } = await supabase.from('outlook_tokens').select('id').limit(1);
+        // Using rpc function instead of direct table access to avoid type issues
+        const { data, error } = await supabase.rpc('check_outlook_connection');
         
         if (error) throw error;
         
-        setMicrosoftStatus(data && data.length > 0 ? 'connected' : 'disconnected');
+        setMicrosoftStatus(data ? 'connected' : 'disconnected');
       } catch (err) {
         console.error("Error checking Microsoft connection:", err);
         setMicrosoftStatus('disconnected');
@@ -40,7 +41,8 @@ export default function Settings() {
 
   const handleOutlookDisconnect = async () => {
     try {
-      const { error } = await supabase.from('outlook_tokens').delete().lt('id', Number.MAX_SAFE_INTEGER);
+      // Using rpc function instead of direct table access to avoid type issues
+      const { error } = await supabase.rpc('disconnect_outlook');
       
       if (error) throw error;
       
