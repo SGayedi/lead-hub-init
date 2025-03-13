@@ -1,73 +1,56 @@
 
 import React, { useState, useEffect } from "react";
 import { Mail, Send, Archive, FileText } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "react-router-dom";
 
 export default function Inbox() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "inbox";
   const [activeTab, setActiveTab] = useState(tabFromUrl);
 
-  // Update the tab when the URL changes
+  // Update the active tab when the URL changes
   useEffect(() => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  // Update the URL when the tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
+  // Helper function to get a friendly display name for the tab
+  const getTabDisplayName = (tab: string) => {
+    const firstLetter = tab.charAt(0).toUpperCase();
+    const restOfWord = tab.slice(1);
+    return firstLetter + restOfWord;
+  };
+
+  // Render the appropriate content based on the active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case "inbox":
+        return <EmptyInboxState message="Your inbox is empty" />;
+      case "drafts":
+        return <EmptyInboxState message="No drafts found" />;
+      case "sent":
+        return <EmptyInboxState message="No sent messages" />;
+      case "archive":
+        return <EmptyInboxState message="No archived messages" />;
+      default:
+        return <EmptyInboxState message="Your inbox is empty" />;
+    }
   };
 
   return (
     <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{getTabDisplayName(activeTab)}</h1>
         <Button>
           <FileText className="mr-2 h-4 w-4" />
           Compose
         </Button>
       </div>
 
-      <Tabs defaultValue="inbox" value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
-          <TabsTrigger value="inbox" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            <span className="hidden sm:inline">Inbox</span>
-          </TabsTrigger>
-          <TabsTrigger value="drafts" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Drafts</span>
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            <span className="hidden sm:inline">Sent</span>
-          </TabsTrigger>
-          <TabsTrigger value="archive" className="flex items-center gap-2">
-            <Archive className="h-4 w-4" />
-            <span className="hidden sm:inline">Archive</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="inbox" className="space-y-4 mt-6">
-          <EmptyInboxState message="Your inbox is empty" />
-        </TabsContent>
-
-        <TabsContent value="drafts" className="space-y-4 mt-6">
-          <EmptyInboxState message="No drafts found" />
-        </TabsContent>
-
-        <TabsContent value="sent" className="space-y-4 mt-6">
-          <EmptyInboxState message="No sent messages" />
-        </TabsContent>
-
-        <TabsContent value="archive" className="space-y-4 mt-6">
-          <EmptyInboxState message="No archived messages" />
-        </TabsContent>
-      </Tabs>
+      <div className="space-y-4">
+        {renderContent()}
+      </div>
     </div>
   );
 }

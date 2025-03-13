@@ -1,4 +1,3 @@
-
 import { Home, Users, Settings, Calendar, Briefcase, Inbox, Mail, Send, Archive, FileText } from "lucide-react";
 import {
   Sidebar,
@@ -12,7 +11,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarMenuSubTrigger,
 } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -77,7 +75,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    Outlook: true, // Default expanded - updated from "Inbox" to "Outlook"
+    Outlook: true,
   });
 
   const toggleSubmenu = (title: string) => {
