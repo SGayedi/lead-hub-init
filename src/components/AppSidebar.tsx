@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const menuItems = [
   {
@@ -103,39 +103,48 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {item.submenu ? (
-                    <Collapsible
-                      open={expandedMenus[item.title]}
-                      onOpenChange={() => toggleSubmenu(item.title)}
+                    <Accordion 
+                      type="single" 
+                      collapsible 
+                      value={expandedMenus[item.title] ? item.title : ""} 
+                      onValueChange={(val) => setExpandedMenus(prev => ({
+                        ...prev,
+                        [item.title]: val === item.title
+                      }))}
+                      className="w-full border-none"
                     >
-                      <CollapsibleTrigger asChild>
+                      <AccordionItem value={item.title} className="border-none">
                         <SidebarMenuButton 
                           asChild 
                           isActive={isMenuActive(item)}
+                          className="w-full"
                         >
-                          <button className="w-full flex items-center gap-2">
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </button>
+                          <AccordionTrigger className="w-full py-0 hover:no-underline">
+                            <div className="flex items-center gap-2 w-full">
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </div>
+                          </AccordionTrigger>
                         </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      
-                      <CollapsibleContent className="animate-accordion-down">
-                        <SidebarMenuSub>
-                          {item.submenu.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                isActive={location.pathname + location.search === subItem.path}
-                                onClick={() => navigate(subItem.path)}
-                                className="flex items-center gap-2 transition-colors duration-200"
-                              >
-                                <subItem.icon className="h-4 w-4" />
-                                <span>{subItem.title}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
+                        
+                        <AccordionContent className="pt-1 pb-0 px-0">
+                          <SidebarMenuSub>
+                            {item.submenu.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton
+                                  isActive={location.pathname + location.search === subItem.path}
+                                  onClick={() => navigate(subItem.path)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <subItem.icon className="h-4 w-4" />
+                                  <span>{subItem.title}</span>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   ) : (
                     <SidebarMenuButton 
                       asChild 
