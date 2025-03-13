@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +25,12 @@ interface DocumentFilter {
   relatedEntityId?: string;
   relatedEntityType?: "lead" | "meeting" | "opportunity";
   searchTerm?: string;
+}
+
+// Define the return type for the upload mutation
+interface UploadResult {
+  id: string;
+  [key: string]: any;
 }
 
 export function useDocuments(filter: DocumentFilter = {}) {
@@ -74,7 +79,7 @@ export function useDocuments(filter: DocumentFilter = {}) {
       relatedEntityId: string, 
       relatedEntityType: "lead" | "meeting" | "opportunity",
       existingDocumentId?: string
-    }) => {
+    }): Promise<UploadResult | null> => {
       if (!user) throw new Error('User not authenticated');
       
       // If updating an existing document
@@ -122,6 +127,9 @@ export function useDocuments(filter: DocumentFilter = {}) {
           await supabase.storage.from('documents').remove([filePath]);
           throw updateError;
         }
+        
+        // After successfully updating, return the document id
+        return { id: existingDocumentId };
       } else {
         // Creating a new document
         const filePath = `${relatedEntityType}/${relatedEntityId}/${file.name}`;
@@ -134,7 +142,7 @@ export function useDocuments(filter: DocumentFilter = {}) {
         if (uploadError) throw uploadError;
         
         // 2. Create document record in database
-        const { error: dbError } = await supabase
+        const { data: insertedData, error: dbError } = await supabase
           .from('documents')
           .insert([{
             name: file.name,
@@ -146,13 +154,18 @@ export function useDocuments(filter: DocumentFilter = {}) {
             related_entity_type: relatedEntityType,
             version: 1,
             version_history: []
-          }]);
+          }])
+          .select('id')
+          .single();
         
         if (dbError) {
           // If database insert fails, try to delete the uploaded file
           await supabase.storage.from('documents').remove([filePath]);
           throw dbError;
         }
+        
+        // Return the document id
+        return insertedData;
       }
     },
     onSuccess: () => {
