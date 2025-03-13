@@ -14,6 +14,7 @@ export interface OutlookEmail {
   read: boolean;
   has_attachments: boolean;
   is_enquiry: boolean;
+  associated_lead_id?: string;
 }
 
 export function useOutlookEmails() {
@@ -72,37 +73,32 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      let query = supabase
-        .from('outlook_emails')
-        .select('*')
-        .order('received_at', { ascending: false });
-      
-      // Apply filter if provided
-      if (filter) {
-        switch (filter) {
-          case 'inbox':
-            // Emails in the inbox (not archived)
-            // This would require a column to track archived status
-            // For now, just return all emails
-            break;
-          case 'sent':
-            // Could filter by emails with sender matching user's email
-            // Would need to know user's email address
-            break;
-          case 'drafts':
-            // Would need a draft status column
-            break;
-          case 'archive':
-            // Would need an archived status column
-            break;
-        }
-      }
-      
-      const { data, error: fetchError } = await query;
+      // Use rpc to fetch outlook emails to avoid TypeScript errors
+      // since the outlook_emails table isn't in the generated types yet
+      const { data, error: fetchError } = await supabase
+        .rpc('get_outlook_emails');
       
       if (fetchError) throw fetchError;
       
-      setEmails(data || []);
+      // Ensure the data matches the OutlookEmail interface
+      if (data) {
+        const typedEmails: OutlookEmail[] = data.map((email: any) => ({
+          id: email.id,
+          subject: email.subject,
+          sender_name: email.sender_name,
+          sender_email: email.sender_email,
+          received_at: email.received_at,
+          body: email.body,
+          read: email.read,
+          has_attachments: email.has_attachments,
+          is_enquiry: email.is_enquiry,
+          associated_lead_id: email.associated_lead_id
+        }));
+        
+        setEmails(typedEmails);
+      } else {
+        setEmails([]);
+      }
     } catch (err: any) {
       console.error('Error fetching emails:', err);
       setError(err.message || 'Failed to fetch emails');
