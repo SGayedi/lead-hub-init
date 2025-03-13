@@ -12,6 +12,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuSubTrigger,
 } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -34,7 +35,7 @@ const menuItems = [
     path: "/opportunities",
   },
   {
-    title: "Inbox",
+    title: "Outlook",
     icon: Inbox,
     path: "/inbox",
     submenu: [
@@ -76,7 +77,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
-    Inbox: true, // Default expanded
+    Outlook: true, // Default expanded - updated from "Inbox" to "Outlook"
   });
 
   const toggleSubmenu = (title: string) => {
