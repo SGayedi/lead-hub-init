@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -255,7 +254,6 @@ export function useDocuments(filter: DocumentFilter = {}) {
       queryClient.invalidateQueries({ queryKey });
       // Also invalidate all documents queries to be sure
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Document deleted successfully');
     },
     onError: (error: any) => {
       console.error("Document deletion failed:", error);
