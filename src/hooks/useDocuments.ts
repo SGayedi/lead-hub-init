@@ -177,6 +177,7 @@ export function useDocuments(filter: DocumentFilter = {}) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+      refetch();
       toast.success('Document uploaded successfully');
     },
     onError: (error: any) => {
@@ -230,14 +231,14 @@ export function useDocuments(filter: DocumentFilter = {}) {
       }
     },
     onSuccess: (deletedId) => {
-      console.log("Invalidating documents query after deletion");
-      toast.success('Document deleted successfully');
+      console.log("Document successfully deleted with ID:", deletedId);
       
-      queryClient.invalidateQueries({ queryKey });
-      queryClient.refetchQueries({ queryKey });
+      if (data) {
+        queryClient.setQueryData(queryKey, data.filter(doc => doc.id !== deletedId));
+      }
       
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      queryClient.refetchQueries({ queryKey: ['documents'] });
+      refetch();
     },
     onError: (error: any) => {
       console.error("Document deletion failed:", error);

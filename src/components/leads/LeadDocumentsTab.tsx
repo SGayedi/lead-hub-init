@@ -1,69 +1,24 @@
 
-import { useState } from "react";
-import { FileText } from "lucide-react";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { DocumentUploader } from "@/components/DocumentUploader";
 import { useDocuments } from "@/hooks/useDocuments";
-import { Spinner } from "@/components/Spinner";
 
 interface LeadDocumentsTabProps {
   leadId: string;
 }
 
 export function LeadDocumentsTab({ leadId }: LeadDocumentsTabProps) {
-  const { documents, isLoading } = useDocuments({
+  const { refetch } = useDocuments({
     relatedEntityId: leadId,
     relatedEntityType: "lead"
   });
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "PPP");
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Documents</h3>
-      </div>
-
       <DocumentUploader 
         relatedEntityId={leadId} 
         relatedEntityType="lead"
+        onDocumentUploaded={() => refetch()}
       />
-
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Spinner />
-        </div>
-      ) : documents && documents.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
-          {documents.map((doc) => (
-            <div key={doc.id} className="p-4 border rounded-md">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <FileText className="h-8 w-8 text-blue-500" />
-                  <div>
-                    <p className="font-medium">{doc.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(doc.fileSize / 1024).toFixed(2)} KB • Uploaded on {formatDate(doc.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={doc.filePath} target="_blank" rel="noopener noreferrer">
-                    Download
-                  </a>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          No documents attached to this lead yet.
-        </div>
-      )}
     </div>
   );
 }

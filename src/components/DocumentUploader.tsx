@@ -55,6 +55,7 @@ export function DocumentUploader({
   const [versionDocument, setVersionDocument] = useState<any>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
   const { 
     documents, 
@@ -108,6 +109,8 @@ export function DocumentUploader({
         if (onDocumentUploaded && result && typeof result === 'object' && 'id' in result) {
           onDocumentUploaded(result.id);
         }
+        
+        await refetch();
       }
       
       if (fileInputRef.current) {
@@ -125,15 +128,24 @@ export function DocumentUploader({
   const handleDeleteDocument = async (document: any) => {
     if (window.confirm(`Are you sure you want to delete ${document.name}?`)) {
       try {
+        setIsDeleting(document.id);
+        console.log("Deleting document:", document.id, document.filePath);
+        
         await deleteDocument.mutateAsync(document);
-        await refetch();
         
         if (previewDocument && previewDocument.id === document.id) {
           clearPreview();
         }
+        
+        await refetch();
+        
+        toast.success(`Document "${document.name}" deleted successfully`);
+        
       } catch (error: any) {
         console.error('Error deleting document:', error);
         toast.error(`Failed to delete document: ${error.message}`);
+      } finally {
+        setIsDeleting(null);
       }
     }
   };
@@ -400,8 +412,13 @@ export function DocumentUploader({
                       size="icon"
                       className="text-destructive"
                       onClick={() => handleDeleteDocument(document)}
+                      disabled={isDeleting === document.id}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {isDeleting === document.id ? (
+                        <Spinner className="h-4 w-4" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
