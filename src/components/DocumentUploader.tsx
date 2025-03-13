@@ -106,7 +106,7 @@ export function DocumentUploader({
         
         console.log("Upload result:", result);
         
-        if (onDocumentUploaded && result && typeof result === 'object' && 'id' in result) {
+        if (onDocumentUploaded && result && result.id) {
           onDocumentUploaded(result.id);
         }
         
