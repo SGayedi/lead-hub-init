@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { UploadCloud, FileText, Trash2, Download, Eye, History, ArrowUpCircle } from 'lucide-react';
@@ -29,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DocumentUploaderProps {
   relatedEntityId: string;
@@ -49,6 +49,7 @@ export function DocumentUploader({
   maxFiles = 1,
   onDocumentUploaded
 }: DocumentUploaderProps) {
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [versionDocument, setVersionDocument] = useState<any>(null);
@@ -87,6 +88,13 @@ export function DocumentUploader({
       if (onUpload) {
         await onUpload([file]);
       } else {
+        if (!user) {
+          toast.error('You must be logged in to upload documents');
+          return;
+        }
+        
+        console.log("Uploading file:", file.name, "for entity:", relatedEntityId);
+        
         const result = await uploadDocument.mutateAsync({
           file,
           relatedEntityId,
@@ -94,8 +102,8 @@ export function DocumentUploader({
           existingDocumentId: versionDocument?.id
         });
         
-        // Check if onDocumentUploaded is provided and call it with the document ID
-        // but only if we have a result that contains an id property
+        console.log("Upload result:", result);
+        
         if (onDocumentUploaded && result && typeof result === 'object' && 'id' in result) {
           onDocumentUploaded(result.id);
         }
@@ -105,8 +113,9 @@ export function DocumentUploader({
         fileInputRef.current.value = '';
       }
       setVersionDocument(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error);
+      toast.error(`Upload failed: ${error.message}`);
     } finally {
       setUploadingFile(false);
     }
@@ -280,7 +289,7 @@ export function DocumentUploader({
               variant="outline" 
               className="w-full"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingFile}
+              disabled={uploadingFile || !user}
             >
               {uploadingFile ? (
                 <Spinner className="mr-2" />
@@ -289,6 +298,11 @@ export function DocumentUploader({
               )}
               {versionDocument ? `Upload New Version of ${versionDocument.name}` : 'Upload Document'}
             </Button>
+            {!user && (
+              <p className="text-sm text-red-500 mt-1">
+                You must be logged in to upload documents
+              </p>
+            )}
             {(versionDocument || onCancel) && (
               <Button 
                 variant="ghost" 

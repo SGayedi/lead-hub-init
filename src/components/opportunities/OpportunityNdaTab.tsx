@@ -8,6 +8,7 @@ import { DocumentUploader } from "@/components/DocumentUploader";
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { NdaStatus, Opportunity } from "@/types/crm";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface OpportunityNdaTabProps {
   opportunity: Opportunity;
@@ -36,6 +37,9 @@ export function OpportunityNdaTab({ opportunity }: OpportunityNdaTabProps) {
         ndaId: latestNda.id,
         documentId 
       });
+      
+      // Automatically mark the NDA as signed once document is uploaded
+      markNdaSigned.mutate({ ndaId: latestNda.id });
     }
   };
 
@@ -137,6 +141,14 @@ export function OpportunityNdaTab({ opportunity }: OpportunityNdaTabProps) {
                   relatedEntityType="opportunity"
                   onDocumentUploaded={handleUploadSignedNda}
                 />
+                {latestNda.status === "issued" && latestNda.document_id && (
+                  <Button 
+                    onClick={() => handleMarkSigned(latestNda.id)} 
+                    className="mt-4 bg-green-600 hover:bg-green-700"
+                  >
+                    Mark as Signed by Investor
+                  </Button>
+                )}
               </div>
             )}
 
