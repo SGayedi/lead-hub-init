@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const menuItems = [
   {
@@ -102,26 +103,30 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {item.submenu ? (
-                    <>
-                      <SidebarMenuButton 
-                        asChild 
-                        onClick={() => toggleSubmenu(item.title)}
-                        isActive={isMenuActive(item)}
-                      >
-                        <button className="w-full flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </button>
-                      </SidebarMenuButton>
+                    <Collapsible
+                      open={expandedMenus[item.title]}
+                      onOpenChange={() => toggleSubmenu(item.title)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isMenuActive(item)}
+                        >
+                          <button className="w-full flex items-center gap-2">
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </button>
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
                       
-                      {expandedMenus[item.title] && (
+                      <CollapsibleContent className="animate-accordion-down">
                         <SidebarMenuSub>
                           {item.submenu.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 isActive={location.pathname + location.search === subItem.path}
                                 onClick={() => navigate(subItem.path)}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 transition-colors duration-200"
                               >
                                 <subItem.icon className="h-4 w-4" />
                                 <span>{subItem.title}</span>
@@ -129,8 +134,8 @@ export function AppSidebar() {
                             </SidebarMenuSubItem>
                           ))}
                         </SidebarMenuSub>
-                      )}
-                    </>
+                      </CollapsibleContent>
+                    </Collapsible>
                   ) : (
                     <SidebarMenuButton 
                       asChild 
