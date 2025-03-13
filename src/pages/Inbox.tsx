@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Send, Archive, FileText, RefreshCw, LogIn } from "lucide-react";
+import { Mail, Send, Archive, FileText, RefreshCw, LogIn, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "react-router-dom";
@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { useOutlookEmails } from "@/hooks/useOutlookEmails";
 import { useOutlookAuth } from "@/hooks/useOutlookAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Inbox() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ export default function Inbox() {
   const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [currentPage, setCurrentPage] = useState(1);
   const [isOutlookConnected, setIsOutlookConnected] = useState<boolean | null>(null);
+  const [isConfigComplete, setIsConfigComplete] = useState<boolean>(true);
   const itemsPerPage = 10;
   
   // Use our custom hooks
@@ -32,6 +34,7 @@ export default function Inbox() {
         const { data, error } = await supabase.functions.invoke('check-outlook-connection');
         if (error) throw error;
         setIsOutlookConnected(data?.connected || false);
+        setIsConfigComplete(data?.configurationComplete || false);
       } catch (err) {
         console.error("Error checking Outlook connection:", err);
         setIsOutlookConnected(false);
@@ -76,7 +79,7 @@ export default function Inbox() {
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Sync Emails
           </Button>
-          <Button variant="outline" onClick={authorizeOutlook}>
+          <Button variant="outline" onClick={authorizeOutlook} disabled={!isConfigComplete}>
             <LogIn className="mr-2 h-4 w-4" />
             Connect Outlook
           </Button>
@@ -86,6 +89,15 @@ export default function Inbox() {
           </Button>
         </div>
       </div>
+
+      {!isConfigComplete && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Microsoft OAuth configuration is incomplete. Please check the Edge Function environment variables.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="inbox" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-md">
@@ -127,9 +139,10 @@ export default function Inbox() {
                 <p className="text-center text-muted-foreground">
                   Connect your Outlook account to view and manage your emails.
                 </p>
-                <Button onClick={authorizeOutlook}>
+                <Button onClick={authorizeOutlook} disabled={!isConfigComplete}>
                   <LogIn className="mr-2 h-4 w-4" />
                   Connect Outlook
+                  {!isConfigComplete && <span className="ml-2">(Configuration Required)</span>}
                 </Button>
               </CardContent>
             </Card>
