@@ -1,12 +1,26 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, Send, Archive, FileText } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "react-router-dom";
 
 export default function Inbox() {
-  const [activeTab, setActiveTab] = useState("inbox");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") || "inbox";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  // Update the tab when the URL changes
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
+
+  // Update the URL when the tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
 
   return (
     <div className="container py-6 space-y-6">
@@ -18,7 +32,7 @@ export default function Inbox() {
         </Button>
       </div>
 
-      <Tabs defaultValue="inbox" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="inbox" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="inbox" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
