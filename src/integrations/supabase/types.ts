@@ -921,6 +921,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_outlook_connection: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       clean_expired_record_locks: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -939,6 +943,10 @@ export type Database = {
         Returns: string
       }
       create_gmail_emails_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      disconnect_outlook: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

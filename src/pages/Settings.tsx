@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Link, RefreshCw, LogIn } from "lucide-react";
+import { Mail, Link, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOutlookAuth } from "@/hooks/useOutlookAuth";
 import { useOutlookEmails } from "@/hooks/useOutlookEmails";
@@ -20,14 +20,12 @@ export default function Settings() {
   useEffect(() => {
     async function checkMicrosoftConnection() {
       try {
-        // Using function call interface instead of rpc method to avoid type issues
-        const { data, error } = await supabase.functions.invoke('check-outlook-connection', {
-          method: 'GET'
-        });
+        // Use the RPC function to check connection status
+        const { data, error } = await supabase.rpc('check_outlook_connection');
         
         if (error) throw error;
         
-        setMicrosoftStatus(data?.connected ? 'connected' : 'disconnected');
+        setMicrosoftStatus(data ? 'connected' : 'disconnected');
       } catch (err) {
         console.error("Error checking Microsoft connection:", err);
         setMicrosoftStatus('disconnected');
@@ -43,10 +41,8 @@ export default function Settings() {
 
   const handleOutlookDisconnect = async () => {
     try {
-      // Using function call interface instead of rpc method to avoid type issues
-      const { error } = await supabase.functions.invoke('disconnect-outlook', {
-        method: 'POST'
-      });
+      // Use the RPC function to disconnect
+      const { error } = await supabase.rpc('disconnect_outlook');
       
       if (error) throw error;
       
