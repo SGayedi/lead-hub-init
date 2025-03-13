@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
@@ -17,11 +16,10 @@ import { useOutlookAuth } from "./hooks/useOutlookAuth";
 import { Toaster as SonnerToaster } from "sonner";
 import "./App.css";
 import Calendar from "./pages/Calendar";
+import Opportunities from "./pages/Opportunities";
 
-// Create a client
 const queryClient = new QueryClient();
 
-// OAuth callback handler component
 function OutlookCallbackHandler() {
   useOutlookAuth();
   return null;
@@ -42,6 +40,7 @@ function App() {
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="meetings" element={<Meetings />} />
                 <Route path="calendar" element={<Calendar />} />
+                <Route path="opportunities" element={<Opportunities />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />

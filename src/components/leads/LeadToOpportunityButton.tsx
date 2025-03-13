@@ -1,84 +1,68 @@
 
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRightCircle } from "lucide-react";
-import { useOpportunities } from "@/hooks/useOpportunities";
-import { Lead } from "@/types/crm";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription,
-  DialogFooter 
-} from "@/components/ui/dialog";
+import { Lead } from "@/types/crm";
+import { Loader2 } from "lucide-react";
 
 interface LeadToOpportunityButtonProps {
   lead: Lead;
-  onConverted?: () => void;
+  onSuccess?: () => void;
 }
 
-export function LeadToOpportunityButton({ lead, onConverted }: LeadToOpportunityButtonProps) {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const { convertLeadToOpportunity } = useOpportunities();
+export function LeadToOpportunityButton({ lead, onSuccess }: LeadToOpportunityButtonProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleConvert = async () => {
-    try {
-      await convertLeadToOpportunity.mutateAsync(lead.id);
-      setShowConfirmDialog(false);
-      if (onConverted) {
-        onConverted();
+  const convertToOpportunity = useMutation({
+    mutationFn: async () => {
+      setIsProcessing(true);
+      try {
+        // Call the Supabase function to convert lead to opportunity
+        const { data, error } = await supabase.rpc(
+          'convert_lead_to_opportunity',
+          { lead_id_param: lead.id }
+        );
+
+        if (error) throw error;
+        return data;
+      } finally {
+        setIsProcessing(false);
       }
-    } catch (error) {
-      console.error("Error converting lead:", error);
-      toast.error("Failed to convert lead to opportunity");
-    }
-  };
+    },
+    onSuccess: () => {
+      toast.success(`Lead "${lead.name}" has been converted to an opportunity`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (error) => {
+      toast.error(`Failed to convert lead: ${error.message}`);
+    },
+  });
 
-  // Only allow conversion for active leads that are waiting for approval
-  const canConvert = lead.status === "waiting_for_approval";
+  // Disable button if lead is already archived or not active
+  const isDisabled = !user || lead.status === 'archived' || isProcessing;
 
   return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-1"
-        disabled={!canConvert || convertLeadToOpportunity.isPending}
-        onClick={() => setShowConfirmDialog(true)}
-        title={canConvert ? "Convert to Opportunity" : "Only leads waiting for approval can be converted"}
-      >
-        <ArrowRightCircle className="h-4 w-4" />
-        <span className="hidden md:inline">Convert to Opportunity</span>
-      </Button>
-
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Convert Lead to Opportunity</DialogTitle>
-            <DialogDescription>
-              This will create a new opportunity from this lead and archive the lead.
-              Are you sure you want to convert this lead to an opportunity?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-              disabled={convertLeadToOpportunity.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConvert}
-              disabled={convertLeadToOpportunity.isPending}
-            >
-              {convertLeadToOpportunity.isPending ? "Converting..." : "Convert to Opportunity"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() => convertToOpportunity.mutate()}
+      disabled={isDisabled}
+    >
+      {isProcessing ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Converting...
+        </>
+      ) : (
+        'Convert to Opportunity'
+      )}
+    </Button>
   );
 }
