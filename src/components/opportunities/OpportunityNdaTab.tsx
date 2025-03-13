@@ -5,7 +5,6 @@ import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocumentUploader } from "@/components/DocumentUploader";
-import { Dialog, DialogContent, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { NdaStatus, Opportunity } from "@/types/crm";
 import { format } from "date-fns";
 import { toast } from "sonner";
