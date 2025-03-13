@@ -316,89 +316,6 @@ export type Database = {
           },
         ]
       }
-      gmail_emails: {
-        Row: {
-          associated_lead_id: string | null
-          body: string
-          created_at: string
-          has_attachments: boolean
-          id: string
-          is_enquiry: boolean
-          read: boolean
-          received_at: string
-          sender_email: string
-          sender_name: string
-          subject: string
-          updated_at: string
-        }
-        Insert: {
-          associated_lead_id?: string | null
-          body: string
-          created_at?: string
-          has_attachments?: boolean
-          id: string
-          is_enquiry?: boolean
-          read?: boolean
-          received_at: string
-          sender_email: string
-          sender_name: string
-          subject: string
-          updated_at?: string
-        }
-        Update: {
-          associated_lead_id?: string | null
-          body?: string
-          created_at?: string
-          has_attachments?: boolean
-          id?: string
-          is_enquiry?: boolean
-          read?: boolean
-          received_at?: string
-          sender_email?: string
-          sender_name?: string
-          subject?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gmail_emails_associated_lead_id_fkey"
-            columns: ["associated_lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gmail_tokens: {
-        Row: {
-          access_token: string
-          created_at: string
-          expires_at: string
-          id: string
-          refresh_token: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          refresh_token: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          refresh_token?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       leads: {
         Row: {
           created_at: string
@@ -929,43 +846,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      connect_email_to_lead: {
-        Args: {
-          email_id: string
-          lead_id: string
-        }
-        Returns: undefined
-      }
       convert_lead_to_opportunity: {
         Args: {
           lead_id_param: string
         }
         Returns: string
       }
-      create_gmail_emails_if_not_exists: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       disconnect_outlook: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      get_gmail_emails: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          associated_lead_id: string | null
-          body: string
-          created_at: string
-          has_attachments: boolean
-          id: string
-          is_enquiry: boolean
-          read: boolean
-          received_at: string
-          sender_email: string
-          sender_name: string
-          subject: string
-          updated_at: string
-        }[]
       }
       get_outlook_emails: {
         Args: Record<PropertyKey, never>
@@ -998,12 +887,6 @@ export type Database = {
       is_senior_management: {
         Args: Record<PropertyKey, never>
         Returns: boolean
-      }
-      mark_email_as_enquiry: {
-        Args: {
-          email_id: string
-        }
-        Returns: undefined
       }
       release_record_lock: {
         Args: {
