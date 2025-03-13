@@ -15,6 +15,20 @@ const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID");
 const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET");
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 
+// Set a default fallback redirect URI based on the request URL if not provided
+const getRedirectUri = (req) => {
+  if (REDIRECT_URI) return REDIRECT_URI;
+  
+  try {
+    // Try to extract the origin from the request
+    const url = new URL(req.url);
+    return `${url.origin}/settings`;
+  } catch (e) {
+    console.error("Could not extract origin from request URL:", e);
+    return "http://localhost:8080/settings"; // Fallback
+  }
+};
+
 // Validate required environment variables
 if (!MS_CLIENT_ID) {
   console.error("Missing MS_CLIENT_ID environment variable");
@@ -22,19 +36,6 @@ if (!MS_CLIENT_ID) {
 if (!MS_CLIENT_SECRET) {
   console.error("Missing MS_CLIENT_SECRET environment variable");
 }
-
-// Validate redirect URI - it must be a valid absolute URL
-try {
-  // Test if it can be parsed as a URL
-  new URL(REDIRECT_URI);
-} catch (e) {
-  console.error("Invalid REDIRECT_URI:", REDIRECT_URI, "Error:", e.message);
-  // Set a fallback for local development
-  REDIRECT_URI = "http://localhost:8080/settings";
-}
-
-console.log("Using REDIRECT_URI:", REDIRECT_URI);
-console.log("Using MS_CLIENT_ID:", MS_CLIENT_ID ? "Present" : "Missing");
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -51,7 +52,7 @@ serve(async (req) => {
 
     // Special endpoint for checking setup status that doesn't require authentication
     if (path === 'check-setup') {
-      const isConfigured = !!(MS_CLIENT_ID && MS_CLIENT_SECRET && REDIRECT_URI);
+      const isConfigured = !!(MS_CLIENT_ID && MS_CLIENT_SECRET);
       return new Response(
         JSON.stringify({ 
           status: isConfigured ? 'complete' : 'incomplete',
@@ -104,9 +105,12 @@ serve(async (req) => {
         // Generate Microsoft OAuth URL
         const scope = encodeURIComponent('offline_access Mail.Read');
         
+        // Get the appropriate redirect URI
+        const redirectUri = getRedirectUri(req);
+        console.log('Using redirect URI:', redirectUri);
+        
         // Ensure the redirect URI is properly encoded
-        const encodedRedirectUri = encodeURIComponent(REDIRECT_URI);
-        console.log('Encoded redirect URI:', encodedRedirectUri);
+        const encodedRedirectUri = encodeURIComponent(redirectUri);
         
         const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
         
@@ -131,13 +135,16 @@ serve(async (req) => {
 
         // Exchange code for token
         const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-        console.log('Requesting token with redirect URI:', REDIRECT_URI);
+        
+        // Get the appropriate redirect URI
+        const redirectUri = getRedirectUri(req);
+        console.log('Using redirect URI for token exchange:', redirectUri);
         
         const formData = new URLSearchParams({
           client_id: MS_CLIENT_ID,
           client_secret: MS_CLIENT_SECRET,
           code,
-          redirect_uri: REDIRECT_URI,
+          redirect_uri: redirectUri,
           grant_type: 'authorization_code',
         });
 

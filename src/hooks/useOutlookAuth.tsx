@@ -38,6 +38,7 @@ export function useOutlookAuth() {
         });
         
         try {
+          // Call the edge function to complete the authentication
           const response = await supabase.functions.invoke('microsoft-auth', {
             method: 'POST',
             body: { 
@@ -56,9 +57,9 @@ export function useOutlookAuth() {
             description: "Your Outlook account has been connected!",
           });
           
-          // Redirect back to inbox
-          navigate('/inbox?tab=inbox');
-        } catch (error: any) {
+          // Redirect to the inbox page
+          navigate('/inbox');
+        } catch (error) {
           console.error("Error in callback processing:", error);
           toast({
             title: "Connection Error",
@@ -70,5 +71,5 @@ export function useOutlookAuth() {
     };
     
     handleOutlookCallback();
-  }, [location.search]);
+  }, [location.search, navigate, toast]);
 }
