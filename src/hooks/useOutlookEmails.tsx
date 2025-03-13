@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,7 +73,7 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // Use a raw SQL query to bypass TypeScript type checking
+      // Use the RPC function to get emails
       const { data, error: fetchError } = await supabase
         .rpc('get_outlook_emails') as { data: OutlookEmail[] | null, error: any };
       
