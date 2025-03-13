@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Dialog,
@@ -5,14 +6,13 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, MessageSquare, CalendarClock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Lead } from "@/types/crm";
-import { CommentSection } from "./CommentSection";
+import { CommentSection } from "@/components/CommentSection";
 import { useLeadEditor } from "@/hooks/useLeadEditor";
-import { LeadDialogHeader } from "./leads/LeadDialogHeader";
-import { LeadDetailsTab } from "./leads/LeadDetailsTab";
-import { LeadDocumentsTab } from "./leads/LeadDocumentsTab";
-import { LeadTasksTab } from "./leads/LeadTasksTab";
+import { LeadDialogHeader } from "@/components/leads/LeadDialogHeader";
+import { LeadDetailsTab } from "@/components/leads/LeadDetailsTab";
+import { LeadDocumentsTab } from "@/components/leads/LeadDocumentsTab";
+import { LeadTasksTab } from "@/components/leads/LeadTasksTab";
 
 interface LeadDetailsDialogProps {
   lead: Lead | null;
