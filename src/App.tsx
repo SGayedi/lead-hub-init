@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
@@ -13,7 +14,7 @@ import Meetings from "./pages/Meetings";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { useOutlookAuth } from "./hooks/useOutlookAuth";
-import { Toaster as SonnerToaster } from "sonner";
+import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import "./App.css";
 import Calendar from "./pages/Calendar";
 import Opportunities from "./pages/Opportunities";
