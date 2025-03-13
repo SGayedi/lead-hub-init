@@ -205,52 +205,59 @@ export function useDocuments(filter: DocumentFilter = {}) {
     mutationFn: async (document: Document) => {
       console.log("Deleting document:", document.id, document.filePath);
       
-      // 1. Delete file from storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([document.filePath]);
-      
-      if (storageError) {
-        console.error("Storage deletion error:", storageError);
-        throw storageError;
-      }
-      
-      // Delete all version history files if they exist
-      if (document.versionHistory && document.versionHistory.length > 0) {
-        const paths = document.versionHistory.map(v => v.path);
-        if (paths.length > 0) {
-          const { error: historyError } = await supabase.storage
-            .from('documents')
-            .remove(paths);
-            
-          if (historyError) {
-            console.warn("Error deleting version history files:", historyError);
-            // Continue with database deletion even if history file deletion fails
+      try {
+        // 1. Delete file from storage
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([document.filePath]);
+        
+        if (storageError) {
+          console.error("Storage deletion error:", storageError);
+          throw storageError;
+        }
+        
+        // Delete all version history files if they exist
+        if (document.versionHistory && document.versionHistory.length > 0) {
+          const paths = document.versionHistory.map(v => v.path);
+          if (paths.length > 0) {
+            const { error: historyError } = await supabase.storage
+              .from('documents')
+              .remove(paths);
+              
+            if (historyError) {
+              console.warn("Error deleting version history files:", historyError);
+              // Continue with database deletion even if history file deletion fails
+            }
           }
         }
+        
+        // 2. Delete document record from database
+        const { error: dbError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', document.id);
+        
+        if (dbError) {
+          console.error("Database deletion error:", dbError);
+          throw dbError;
+        }
+        
+        console.log("Document successfully deleted");
+        return document.id;
+      } catch (error) {
+        console.error("Error in deleteDocument mutationFn:", error);
+        throw error;
       }
-      
-      // 2. Delete document record from database
-      const { error: dbError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', document.id);
-      
-      if (dbError) {
-        console.error("Database deletion error:", dbError);
-        throw dbError;
-      }
-      
-      console.log("Document successfully deleted");
-      return document.id;
     },
     onSuccess: (deletedId) => {
       console.log("Invalidating documents query after deletion");
       // Invalidate using the exact same query key structure for proper cache invalidation
       queryClient.invalidateQueries({ queryKey });
+      // Also invalidate all documents queries to be sure
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
       toast.success('Document deleted successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Document deletion failed:", error);
       toast.error(`Failed to delete document: ${error.message}`);
     }
