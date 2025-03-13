@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -21,10 +22,10 @@ const getRedirectUri = (req) => {
   try {
     // Try to extract the origin from the request
     const url = new URL(req.url);
-    return `${url.origin}/settings`;
+    return `${url.origin}/inbox`;
   } catch (e) {
     console.error("Could not extract origin from request URL:", e);
-    return "http://localhost:8080/settings"; // Fallback
+    return "http://localhost:8080/inbox"; // Fallback
   }
 };
 
@@ -86,10 +87,16 @@ serve(async (req) => {
 
     // Validate required environment variables
     if (!MS_CLIENT_ID || !MS_CLIENT_SECRET) {
+      const missingVars = [];
+      if (!MS_CLIENT_ID) missingVars.push('MS_CLIENT_ID');
+      if (!MS_CLIENT_SECRET) missingVars.push('MS_CLIENT_SECRET');
+      
+      console.error(`Microsoft OAuth configuration is incomplete. Missing: ${missingVars.join(', ')}`);
+      
       return new Response(
         JSON.stringify({ 
           error: 'Microsoft OAuth configuration is incomplete', 
-          details: 'Missing client ID or secret' 
+          details: `Missing: ${missingVars.join(', ')}` 
         }),
         { 
           status: 500, 
@@ -303,7 +310,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in edge function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message, 
+        stack: error.stack // Include the stack trace for better debugging
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

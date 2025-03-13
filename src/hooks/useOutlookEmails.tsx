@@ -45,7 +45,10 @@ export function useOutlookEmails() {
         body: { path: 'sync-emails' },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(`Edge function error: ${error.message || 'Unknown error'}`);
+      }
       
       if (data.success) {
         toast({
@@ -55,13 +58,16 @@ export function useOutlookEmails() {
         
         // Fetch the emails from the database
         await fetchEmails();
+      } else if (data.error) {
+        throw new Error(data.error);
       }
     } catch (err: any) {
       console.error('Error syncing emails:', err);
-      setError(err.message || 'Failed to sync emails');
+      const errorMessage = err.message || 'Failed to sync emails';
+      setError(errorMessage);
       toast({
         title: "Sync Failed",
-        description: err.message || 'Failed to sync emails from Outlook',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -113,14 +119,19 @@ export function useOutlookEmails() {
     
     try {
       // First check if setup is complete
-      const setupCheck = await supabase.functions.invoke('microsoft-auth', {
+      const { data: setupData, error: setupError } = await supabase.functions.invoke('microsoft-auth', {
         method: 'POST',
         body: { path: 'check-setup' },
       });
       
-      if (!setupCheck.data?.status || setupCheck.data.status === 'incomplete') {
+      if (setupError) {
+        console.error('Error checking setup:', setupError);
+        throw new Error(`Configuration check failed: ${setupError.message || 'Unknown error'}`);
+      }
+      
+      if (!setupData?.status || setupData.status === 'incomplete') {
         const missingItems = [];
-        const details = setupCheck.data?.details || {};
+        const details = setupData?.details || {};
         
         if (!details.client_id) missingItems.push('MS_CLIENT_ID');
         if (!details.client_secret) missingItems.push('MS_CLIENT_SECRET');
@@ -144,11 +155,20 @@ export function useOutlookEmails() {
         body: { path: 'authorize' },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw new Error(`Authorization failed: ${error.message || 'Unknown error'}`);
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
       if (data.url) {
         // Redirect to Microsoft's OAuth page
         window.location.href = data.url;
+      } else {
+        throw new Error('No authorization URL returned');
       }
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
