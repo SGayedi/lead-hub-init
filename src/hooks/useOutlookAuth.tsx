@@ -1,27 +1,74 @@
 
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useOutlookAuth() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // This is a placeholder for Outlook OAuth integration
-    // It will be properly implemented when Outlook integration is needed
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.has('outlook_code')) {
-      // Process Outlook OAuth response when implemented
-      console.log('Outlook OAuth flow detected');
+    const handleOutlookCallback = async () => {
+      const params = new URLSearchParams(location.search);
+      const code = params.get('code');
+      const error = params.get('error');
+      const state = params.get('state');
       
-      // Clear URL parameters
-      if (window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+      if (code || error) {
+        // Remove the query parameters from URL
+        navigate(location.pathname, { replace: true });
       }
-    }
-  }, [location]);
-
-  return null;
+      
+      if (error) {
+        console.error("OAuth error:", error);
+        toast({
+          title: "Authentication Failed",
+          description: "Failed to connect your Outlook account. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (code && state) {
+        toast({
+          title: "Authenticating",
+          description: "Completing Outlook authentication...",
+        });
+        
+        try {
+          const response = await supabase.functions.invoke('microsoft-auth', {
+            method: 'POST',
+            body: { 
+              path: 'callback',
+              code,
+              state
+            },
+          });
+          
+          if (response.error) {
+            throw new Error(response.error.message);
+          }
+          
+          toast({
+            title: "Success",
+            description: "Your Outlook account has been connected!",
+          });
+          
+          // Redirect back to inbox
+          navigate('/inbox?tab=inbox');
+        } catch (error: any) {
+          console.error("Error in callback processing:", error);
+          toast({
+            title: "Connection Error",
+            description: error.message || "Failed to complete Outlook integration. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    
+    handleOutlookCallback();
+  }, [location.search]);
 }

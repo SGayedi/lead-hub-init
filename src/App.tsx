@@ -14,6 +14,7 @@ import Meetings from "./pages/Meetings";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { useOutlookAuth } from "./hooks/useOutlookAuth";
+import { useGmailAuth } from "./hooks/useGmailAuth";
 import { Toaster as SonnerToaster } from "./components/ui/sonner";
 import "./App.css";
 import Calendar from "./pages/Calendar";
@@ -22,8 +23,10 @@ import Inbox from "./pages/Inbox";
 
 const queryClient = new QueryClient();
 
-function OutlookCallbackHandler() {
+function AuthCallbackHandler() {
+  // Process both OAuth providers
   useOutlookAuth();
+  useGmailAuth();
   return null;
 }
 
@@ -33,7 +36,7 @@ function App() {
       <ThemeProvider defaultTheme="system" storageKey="crm-theme">
         <Router>
           <AuthProvider>
-            <OutlookCallbackHandler />
+            <AuthCallbackHandler />
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
