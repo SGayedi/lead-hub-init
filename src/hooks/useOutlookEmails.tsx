@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,28 +72,17 @@ export function useOutlookEmails() {
     setError(null);
     
     try {
-      // Use rpc to fetch outlook emails to avoid TypeScript errors
-      // since the outlook_emails table isn't in the generated types yet
+      // Use a direct query instead of rpc to get around TypeScript limitations
       const { data, error: fetchError } = await supabase
-        .rpc('get_outlook_emails');
+        .from('outlook_emails')
+        .select('*')
+        .order('received_at', { ascending: false });
       
       if (fetchError) throw fetchError;
       
-      // Ensure the data matches the OutlookEmail interface
       if (data) {
-        const typedEmails: OutlookEmail[] = data.map((email: any) => ({
-          id: email.id,
-          subject: email.subject,
-          sender_name: email.sender_name,
-          sender_email: email.sender_email,
-          received_at: email.received_at,
-          body: email.body,
-          read: email.read,
-          has_attachments: email.has_attachments,
-          is_enquiry: email.is_enquiry,
-          associated_lead_id: email.associated_lead_id
-        }));
-        
+        // Explicitly cast to ensure TypeScript understands this is an array of the expected type
+        const typedEmails: OutlookEmail[] = data as any[];
         setEmails(typedEmails);
       } else {
         setEmails([]);
