@@ -21,14 +21,14 @@ export default function Inbox() {
   // Use our custom hooks
   const { emails, isLoading, error, syncEmails, fetchEmails, authorizeOutlook } = useOutlookEmails();
   
+  // Process Outlook OAuth callback if needed - moved to the top level
+  useOutlookAuth();
+  
   // Load emails when the component mounts or tab changes
   useEffect(() => {
-    // Process Outlook OAuth callback if needed
-    useOutlookAuth();
-    
     // Fetch emails for the active tab
     fetchEmails(activeTab);
-  }, [activeTab]);
+  }, [activeTab, fetchEmails]);
 
   // Update the active tab when the URL changes
   useEffect(() => {
