@@ -17,14 +17,15 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_stages', type],
     queryFn: async () => {
-      // For custom functions not in the typed schema, we need to use any type for RPC call
-      const { data, error } = await supabase
-        .rpc('get_pipeline_stages', { type_param: type } as any);
+      // Need to use any to bypass TypeScript's type checking for custom RPC functions
+      const response = await supabase.functions.invoke('get_pipeline_stages', {
+        body: { type_param: type }
+      });
       
-      if (error) throw error;
+      if (response.error) throw response.error;
       
-      // Explicit cast to unknown first, then to the expected type
-      return (data as unknown) as PipelineStage[];
+      // Explicit cast to the expected type
+      return response.data as PipelineStage[];
     }
   });
 
@@ -37,14 +38,15 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_items', type, searchTerm],
     queryFn: async () => {
-      // For custom functions not in the typed schema, we need to use any type for RPC call
-      const { data, error } = await supabase
-        .rpc('get_pipeline_items', { type_param: type } as any);
+      // Need to use any to bypass TypeScript's type checking for custom RPC functions
+      const response = await supabase.functions.invoke('get_pipeline_items', {
+        body: { type_param: type }
+      });
       
-      if (error) throw error;
+      if (response.error) throw response.error;
       
-      // Explicit cast to unknown first, then to the expected type
-      let result = (data as unknown) as PipelineColumn[];
+      // Explicit cast to the expected type
+      let result = response.data as PipelineColumn[];
       
       // Apply client-side filtering if searchTerm is provided
       if (searchTerm && result) {
@@ -75,18 +77,19 @@ export function usePipeline(type: PipelineType = 'lead') {
       entityId: string; 
       targetStageId: string; 
     }) => {
-      // For custom functions not in the typed schema, we need to use any type for RPC call
-      const { data, error } = await supabase
-        .rpc('move_entity_to_stage', { 
+      // Need to use any to bypass TypeScript's type checking for custom RPC functions
+      const response = await supabase.functions.invoke('move_entity_to_stage', {
+        body: { 
           entity_id: entityId, 
           entity_type: type, 
           target_stage_id: targetStageId 
-        } as any);
+        }
+      });
       
-      if (error) throw error;
+      if (response.error) throw response.error;
       
-      // Explicit cast to unknown first, then to the expected type
-      const result = (data as unknown) as { success: boolean, message?: string, data?: any };
+      // Explicit cast to the expected type
+      const result = response.data as { success: boolean, message?: string, data?: any };
       
       if (!result.success) {
         throw new Error(result.message || 'Failed to move item');
