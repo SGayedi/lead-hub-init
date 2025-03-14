@@ -42,7 +42,7 @@ export function usePipeline(type: PipelineType = 'lead') {
       
       // Apply client-side filtering if searchTerm is provided
       if (searchTerm && data) {
-        data = data.map((column: PipelineColumn) => ({
+        data = (data as any).map((column: PipelineColumn) => ({
           ...column,
           items: column.items.filter((item) => {
             // For leads, search by name
@@ -78,11 +78,13 @@ export function usePipeline(type: PipelineType = 'lead') {
       
       if (error) throw error;
       
-      if (!data.success) {
-        throw new Error(data.message);
+      const result = data as { success: boolean, message?: string, data?: any };
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to move item');
       }
       
-      return data;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline_items'] });
