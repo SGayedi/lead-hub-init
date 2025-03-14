@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface OutlookConnectionStatusProps {
   isOutlookConnected: boolean | null;
@@ -22,7 +22,7 @@ export function OutlookConnectionStatus({
   authUrl,
   resetAuthUrl
 }: OutlookConnectionStatusProps) {
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useIsMobile();
 
   if (isOutlookConnected === null) {
     return (
