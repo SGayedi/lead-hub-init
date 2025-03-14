@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PipelineStage, PipelineColumn, PipelineType } from '@/types/pipeline';
-import { Lead, Opportunity } from '@/types/crm';
+import { Lead, Opportunity, OpportunityStatus } from '@/types/crm';
 
 // Create mock pipeline stages since there's no pipeline_stages table
 const getDefaultStages = (type: PipelineType): PipelineStage[] => {
@@ -184,9 +184,14 @@ export function usePipeline(type: PipelineType = 'lead') {
         return { success: true, data };
       } else {
         // For opportunities, update the status directly
+        // Make sure targetStageId is a valid OpportunityStatus
+        const validStatus = ['assessment_in_progress', 'assessment_completed', 'waiting_for_approval', 'due_diligence_approved', 'rejected'].includes(targetStageId)
+          ? (targetStageId as OpportunityStatus)
+          : 'assessment_in_progress' as OpportunityStatus;
+          
         const { data, error } = await supabase
           .from('opportunities')
-          .update({ status: targetStageId })
+          .update({ status: validStatus })
           .eq('id', entityId)
           .select();
         
