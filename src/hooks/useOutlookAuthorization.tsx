@@ -52,26 +52,9 @@ export function useOutlookAuthorization() {
       
       const authUrl = await initiateOutlookAuthorization();
       
-      // Open Microsoft's OAuth page in a popup window instead of redirecting
-      const width = 600;
-      const height = 700;
-      const left = window.innerWidth / 2 - width / 2;
-      const top = window.innerHeight / 2 - height / 2;
-      
-      const popup = window.open(
-        authUrl,
-        'Connect Outlook',
-        `width=${width},height=${height},left=${left},top=${top},toolbar=0,location=0,menubar=0,status=0`
-      );
-      
-      // Check if popup was blocked
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups for this site to connect Outlook.",
-          variant: "destructive",
-        });
-      }
+      // Instead of popup, redirect directly in the same window
+      // This avoids popup blockers entirely
+      window.location.href = authUrl;
       
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
