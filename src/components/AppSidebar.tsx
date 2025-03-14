@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Users, Briefcase, Calendar, Mail, CheckSquare, Kanban, Settings, Plus, ListChecks } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 
 const getSidebarItemClass = (isActive: boolean) => {
@@ -37,7 +39,7 @@ export function AppSidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="p-0 h-auto w-auto text-sm font-medium hover:underline">
-                {user?.full_name || user?.email}
+                {user?.email}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
@@ -8,7 +9,7 @@ import { Toaster } from './components/ui/toaster';
 import Index from './pages/Index';
 import Leads from './pages/Leads';
 import Opportunities from './pages/Opportunities';
-import Pipeline from './pages/Pipeline'; // Add this import
+import Pipeline from './pages/Pipeline';
 import Inbox from './pages/Inbox';
 import Calendar from './pages/Calendar';
 import Tasks from './pages/Tasks';
@@ -18,7 +19,7 @@ import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 
 // Components
-import Layout from './components/Layout';
+import { Layout } from './components/Layout';
 import { AuthProvider } from './hooks/useAuth';
 
 // Create a client
@@ -35,7 +36,7 @@ function App() {
                 <Route index element={<Index />} />
                 <Route path="leads" element={<Leads />} />
                 <Route path="opportunities" element={<Opportunities />} />
-                <Route path="pipeline" element={<Pipeline />} /> {/* Add Pipeline route */}
+                <Route path="pipeline" element={<Pipeline />} />
                 <Route path="inbox" element={<Inbox />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="tasks" element={<Tasks />} />

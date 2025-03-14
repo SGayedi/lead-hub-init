@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { PipelineCard } from './PipelineCard';
-import { PipelineColumn as PipelineColumnType, PipelineType } from '@/types/pipeline';
+import { PipelineColumn as PipelineColumnType, PipelineType, LeadPipelineItem, OpportunityPipelineItem } from '@/types/pipeline';
 
 interface PipelineColumnProps {
   column: PipelineColumnType;
@@ -38,7 +38,12 @@ export const PipelineColumn = ({
             draggable
             onDragStart={(e) => onDragStart(e, item.id, column.id)}
           >
-            <PipelineCard item={item} type={type} />
+            <PipelineCard 
+              item={type === 'lead' 
+                ? item as LeadPipelineItem 
+                : item as OpportunityPipelineItem} 
+              type={type} 
+            />
           </div>
         ))}
         
