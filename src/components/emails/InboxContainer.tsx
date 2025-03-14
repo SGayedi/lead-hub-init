@@ -47,6 +47,20 @@ export function InboxContainer() {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
   
+  // Add a new effect to listen for messages from the popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OUTLOOK_AUTH_SUCCESS') {
+        // Refresh connection status and emails
+        setIsOutlookConnected(true);
+        fetchEmails(activeTab);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [activeTab, fetchEmails]);
+  
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });

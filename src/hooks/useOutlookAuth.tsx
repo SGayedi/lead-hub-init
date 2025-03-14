@@ -57,8 +57,12 @@ export function useOutlookAuth() {
             description: "Your Outlook account has been connected!",
           });
           
-          // Redirect to the inbox page
-          navigate('/inbox');
+          // Instead of redirecting, just show a success message and reload the emails
+          // The parent window should handle refreshing the UI
+          if (window.opener) {
+            window.opener.postMessage({ type: 'OUTLOOK_AUTH_SUCCESS' }, '*');
+            window.close();
+          }
         } catch (error) {
           console.error("Error in callback processing:", error);
           toast({
