@@ -13,6 +13,7 @@ export function useOutlookEmails() {
     isLoading: isAuthorizing, 
     configError, 
     authUrl, 
+    authError,
     authorizeOutlook, 
     resetAuthUrl 
   } = useOutlookAuthorization();
@@ -29,6 +30,7 @@ export function useOutlookEmails() {
     error,
     configError,
     authUrl,
+    authError,
     syncEmails,
     fetchEmails,
     authorizeOutlook,

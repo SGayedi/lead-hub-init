@@ -1,11 +1,12 @@
 
 import React from "react";
-import { RefreshCw, Mail, LogIn } from "lucide-react";
+import { RefreshCw, Mail, LogIn, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface OutlookConnectionStatusProps {
   isOutlookConnected: boolean | null;
@@ -13,6 +14,7 @@ interface OutlookConnectionStatusProps {
   authorizeOutlook: () => void;
   authUrl: string | null;
   resetAuthUrl: () => void;
+  authError?: string | null;
 }
 
 export function OutlookConnectionStatus({ 
@@ -20,7 +22,8 @@ export function OutlookConnectionStatus({
   isConfigComplete,
   authorizeOutlook,
   authUrl,
-  resetAuthUrl
+  resetAuthUrl,
+  authError
 }: OutlookConnectionStatusProps) {
   const isMobile = useIsMobile();
 
@@ -59,27 +62,60 @@ export function OutlookConnectionStatus({
 
         {/* Use Dialog for desktop and Sheet for mobile */}
         {isMobile ? (
-          <Sheet open={!!authUrl} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <Sheet open={!!authUrl || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <SheetContent side="bottom" className="h-[85vh] p-0">
-              {authUrl && (
+              {authError ? (
+                <div className="p-4">
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {authError}
+                      <p className="mt-2 text-sm">
+                        This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : authUrl ? (
                 <iframe 
                   src={authUrl}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Microsoft Authentication"
+                  onError={() => {
+                    console.error("Iframe failed to load");
+                  }}
                 />
-              )}
+              ) : null}
             </SheetContent>
           </Sheet>
         ) : (
-          <Dialog open={!!authUrl} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <Dialog open={!!authUrl || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <DialogContent className="p-0 max-w-[800px] h-[600px]">
-              {authUrl && (
+              {authError ? (
+                <div className="p-6">
+                  <DialogHeader>
+                    <DialogTitle>Authentication Error</DialogTitle>
+                  </DialogHeader>
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {authError}
+                      <p className="mt-2">
+                        This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : authUrl ? (
                 <iframe 
                   src={authUrl}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Microsoft Authentication"
+                  onError={(e) => {
+                    console.error("Iframe failed to load", e);
+                  }}
                 />
-              )}
+              ) : null}
             </DialogContent>
           </Dialog>
         )}

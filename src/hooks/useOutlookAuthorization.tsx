@@ -8,6 +8,7 @@ export function useOutlookAuthorization() {
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -23,6 +24,7 @@ export function useOutlookAuthorization() {
 
     setIsLoading(true);
     setConfigError(null);
+    setAuthError(null);
     
     try {
       // First check if setup is complete with detailed logging
@@ -71,6 +73,7 @@ export function useOutlookAuthorization() {
       console.error('Error authorizing with Outlook:', err);
       const errorMsg = err.message || 'Failed to connect to Outlook';
       setConfigError(errorMsg);
+      setAuthError("Authentication failed. Please ensure your Microsoft account allows authentication from this domain.");
       toast({
         title: "Authorization Failed",
         description: errorMsg,
@@ -83,12 +86,14 @@ export function useOutlookAuthorization() {
 
   const resetAuthUrl = () => {
     setAuthUrl(null);
+    setAuthError(null);
   };
 
   return {
     isLoading,
     configError,
     authUrl,
+    authError,
     authorizeOutlook,
     resetAuthUrl
   };

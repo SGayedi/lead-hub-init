@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ export function InboxContainer() {
   const [isOutlookConnected, setIsOutlookConnected] = useState<boolean | null>(null);
   const [isConfigComplete, setIsConfigComplete] = useState<boolean>(true);
   
-  const { emails, isLoading, error, configError, syncEmails, fetchEmails, authorizeOutlook, authUrl, resetAuthUrl } = useOutlookEmails();
+  const { emails, isLoading, error, configError, syncEmails, fetchEmails, authorizeOutlook, authUrl, resetAuthUrl, authError } = useOutlookEmails();
   
   useOutlookAuth();
   
@@ -79,6 +80,7 @@ export function InboxContainer() {
         authorizeOutlook={authorizeOutlook}
         authUrl={authUrl}
         resetAuthUrl={resetAuthUrl}
+        authError={authError}
       />
     </div>
   );

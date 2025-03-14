@@ -1,22 +1,25 @@
 
+// Import any components you need here
 import React from "react";
-import { OutlookEmail } from "@/types/outlook";
-import { OutlookConnectionStatus } from "@/components/emails/OutlookConnectionStatus";
-import { EmailsList } from "@/components/emails/EmailsList";
-import { EmailPagination } from "@/components/emails/EmailPagination";
+import { OutlookEmail } from "@/hooks/useOutlookEmails";
+import { EmailsList } from "./EmailsList";
+import { OutlookConnectionStatus } from "./OutlookConnectionStatus";
+import { EmptyInboxState } from "./EmptyInboxState";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface EmailContentProps {
+export interface EmailContentProps {
   emails: OutlookEmail[];
   isLoading: boolean;
   error: string | null;
   activeTab: string;
   currentPage: number;
-  setCurrentPage: (page: number) => void;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   isOutlookConnected: boolean | null;
   isConfigComplete: boolean;
   authorizeOutlook: () => void;
   authUrl: string | null;
   resetAuthUrl: () => void;
+  authError?: string | null;
 }
 
 export function EmailContent({
@@ -30,41 +33,55 @@ export function EmailContent({
   isConfigComplete,
   authorizeOutlook,
   authUrl,
-  resetAuthUrl
+  resetAuthUrl,
+  authError
 }: EmailContentProps) {
-  const itemsPerPage = 10;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const totalPages = Math.ceil(emails.length / itemsPerPage);
   
-  return (
-    <div className="mt-6">
+  // Show connection status if not connected
+  if (isOutlookConnected === false) {
+    return (
       <OutlookConnectionStatus 
-        isOutlookConnected={isOutlookConnected} 
+        isOutlookConnected={isOutlookConnected}
         isConfigComplete={isConfigComplete}
         authorizeOutlook={authorizeOutlook}
         authUrl={authUrl}
         resetAuthUrl={resetAuthUrl}
+        authError={authError}
       />
+    );
+  }
 
-      {isOutlookConnected && (
-        <>
-          <EmailsList 
-            emails={emails}
-            isLoading={isLoading}
-            error={error}
-            activeTab={activeTab}
-            startIndex={startIndex}
-            endIndex={endIndex}
-          />
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
 
-          <EmailPagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        </>
-      )}
-    </div>
+  // Show error state
+  if (error) {
+    return (
+      <div className="bg-card border-border p-6 rounded-md text-center text-red-500">
+        <p>Error loading emails: {error}</p>
+      </div>
+    );
+  }
+
+  // Show empty state if no emails
+  if (!emails || emails.length === 0) {
+    return <EmptyInboxState activeTab={activeTab} />;
+  }
+
+  // Show emails list
+  return (
+    <EmailsList 
+      emails={emails} 
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+    />
   );
 }
