@@ -1,52 +1,55 @@
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './components/ThemeProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from './components/ui/toaster';
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./hooks/useAuth";
-import { Toaster } from "./components/ui/toaster";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Layout } from "./components/Layout";
-import { ThemeProvider } from "./components/ThemeProvider";
-import Auth from "./pages/Auth";
-import Index from "./pages/Index";
-import Leads from "./pages/Leads";
-import Tasks from "./pages/Tasks";
-import Meetings from "./pages/Meetings";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import { Toaster as SonnerToaster } from "./components/ui/sonner";
-import "./App.css";
-import Calendar from "./pages/Calendar";
-import Opportunities from "./pages/Opportunities";
-import Inbox from "./pages/Inbox";
+// Pages
+import Index from './pages/Index';
+import Leads from './pages/Leads';
+import Opportunities from './pages/Opportunities';
+import Pipeline from './pages/Pipeline'; // Add this import
+import Inbox from './pages/Inbox';
+import Calendar from './pages/Calendar';
+import Tasks from './pages/Tasks';
+import Meetings from './pages/Meetings';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
+import Auth from './pages/Auth';
 
+// Components
+import Layout from './components/Layout';
+import { AuthProvider } from './hooks/useAuth';
+
+// Create a client
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="crm-theme">
-        <Router>
-          <AuthProvider>
+    <ThemeProvider defaultTheme="light" storageKey="crm-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
             <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Layout />}>
                 <Route index element={<Index />} />
                 <Route path="leads" element={<Leads />} />
+                <Route path="opportunities" element={<Opportunities />} />
+                <Route path="pipeline" element={<Pipeline />} /> {/* Add Pipeline route */}
+                <Route path="inbox" element={<Inbox />} />
+                <Route path="calendar" element={<Calendar />} />
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="meetings" element={<Meetings />} />
-                <Route path="calendar" element={<Calendar />} />
-                <Route path="opportunities" element={<Opportunities />} />
-                <Route path="inbox" element={<Inbox />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
-              <Route path="*" element={<NotFound />} />
+              <Route path="/auth" element={<Auth />} />
             </Routes>
-            <Toaster />
-            <SonnerToaster position="top-right" />
-          </AuthProvider>
-        </Router>
-      </ThemeProvider>
-    </QueryClientProvider>
+          </Router>
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
