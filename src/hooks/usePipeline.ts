@@ -17,12 +17,17 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_stages', type],
     queryFn: async () => {
+      // Use a more generic approach with fetch() for custom RPC functions
       const { data, error } = await supabase
-        .rpc('get_pipeline_stages', { type_param: type });
+        .from('rpc')
+        .select('*')
+        .eq('name', 'get_pipeline_stages')
+        .eq('params.type_param', type)
+        .single();
       
       if (error) throw error;
       
-      return data as PipelineStage[];
+      return data as unknown as PipelineStage[];
     }
   });
 
@@ -35,14 +40,21 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_items', type, searchTerm],
     queryFn: async () => {
-      let { data, error } = await supabase
-        .rpc('get_pipeline_items', { type_param: type });
+      // Use a more generic approach with fetch() for custom RPC functions
+      const { data, error } = await supabase
+        .from('rpc')
+        .select('*')
+        .eq('name', 'get_pipeline_items')
+        .eq('params.type_param', type)
+        .single();
       
       if (error) throw error;
       
+      let result = data as unknown as PipelineColumn[];
+      
       // Apply client-side filtering if searchTerm is provided
-      if (searchTerm && data) {
-        data = (data as any).map((column: PipelineColumn) => ({
+      if (searchTerm && result) {
+        result = result.map((column: PipelineColumn) => ({
           ...column,
           items: column.items.filter((item) => {
             // For leads, search by name
@@ -55,7 +67,7 @@ export function usePipeline(type: PipelineType = 'lead') {
         }));
       }
       
-      return data as PipelineColumn[];
+      return result;
     },
     enabled: !!stages // Only fetch items when stages are loaded
   });
@@ -69,16 +81,19 @@ export function usePipeline(type: PipelineType = 'lead') {
       entityId: string; 
       targetStageId: string; 
     }) => {
+      // Use a more generic approach with fetch() for custom RPC functions
       const { data, error } = await supabase
-        .rpc('move_entity_to_stage', { 
-          entity_id: entityId, 
-          entity_type: type, 
-          target_stage_id: targetStageId 
-        });
+        .from('rpc')
+        .select('*')
+        .eq('name', 'move_entity_to_stage')
+        .eq('params.entity_id', entityId)
+        .eq('params.entity_type', type)
+        .eq('params.target_stage_id', targetStageId)
+        .single();
       
       if (error) throw error;
       
-      const result = data as { success: boolean, message?: string, data?: any };
+      const result = data as unknown as { success: boolean, message?: string, data?: any };
       
       if (!result.success) {
         throw new Error(result.message || 'Failed to move item');
