@@ -17,15 +17,15 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_stages', type],
     queryFn: async () => {
-      // Need to use any to bypass TypeScript's type checking for custom RPC functions
-      const response = await supabase.functions.invoke('get_pipeline_stages', {
-        body: { type_param: type }
-      });
+      // Use direct fetch for custom RPC functions
+      const { data, error } = await supabase.from('pipeline_stages')
+        .select('*')
+        .eq('type', type)
+        .order('order_index', { ascending: true });
       
-      if (response.error) throw response.error;
+      if (error) throw error;
       
-      // Explicit cast to the expected type
-      return response.data as PipelineStage[];
+      return data as PipelineStage[];
     }
   });
 
@@ -38,32 +38,64 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_items', type, searchTerm],
     queryFn: async () => {
-      // Need to use any to bypass TypeScript's type checking for custom RPC functions
-      const response = await supabase.functions.invoke('get_pipeline_items', {
-        body: { type_param: type }
-      });
-      
-      if (response.error) throw response.error;
-      
-      // Explicit cast to the expected type
-      let result = response.data as PipelineColumn[];
-      
-      // Apply client-side filtering if searchTerm is provided
-      if (searchTerm && result) {
-        result = result.map((column: PipelineColumn) => ({
-          ...column,
-          items: column.items.filter((item) => {
-            // For leads, search by name
-            if (type === 'lead') {
-              return item.name?.toLowerCase().includes(searchTerm.toLowerCase());
-            }
-            // For opportunities, search by lead name
-            return item.lead_name?.toLowerCase().includes(searchTerm.toLowerCase());
-          })
-        }));
+      if (!stages || stages.length === 0) {
+        return [];
       }
       
-      return result;
+      // Create an object to store items by stage id
+      const stageMap: Record<string, PipelineColumn> = {};
+      
+      // Initialize columns for each stage
+      stages.forEach(stage => {
+        stageMap[stage.id] = {
+          id: stage.id,
+          name: stage.name,
+          items: []
+        };
+      });
+      
+      // Fetch items based on type
+      let items;
+      if (type === 'lead') {
+        const { data, error } = await supabase.from('leads')
+          .select('*')
+          .neq('status', 'archived');
+        
+        if (error) throw error;
+        items = data;
+      } else {
+        const { data, error } = await supabase.from('opportunities')
+          .select('*, leads(name)')
+          .neq('status', 'archived');
+        
+        if (error) throw error;
+        items = data;
+      }
+      
+      // Map items to their stages
+      items.forEach(item => {
+        const stageId = item.stage_id || stages[0].id; // Default to first stage if no stage_id
+        
+        if (stageMap[stageId]) {
+          // Apply client-side filtering if searchTerm is provided
+          if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            // For leads, search by name
+            if (type === 'lead' && item.name?.toLowerCase().includes(searchLower)) {
+              stageMap[stageId].items.push(item);
+            }
+            // For opportunities, search by lead name
+            else if (type === 'opportunity' && item.leads?.name?.toLowerCase().includes(searchLower)) {
+              stageMap[stageId].items.push(item);
+            }
+          } else {
+            stageMap[stageId].items.push(item);
+          }
+        }
+      });
+      
+      // Convert map to array
+      return Object.values(stageMap);
     },
     enabled: !!stages // Only fetch items when stages are loaded
   });
@@ -77,25 +109,18 @@ export function usePipeline(type: PipelineType = 'lead') {
       entityId: string; 
       targetStageId: string; 
     }) => {
-      // Need to use any to bypass TypeScript's type checking for custom RPC functions
-      const response = await supabase.functions.invoke('move_entity_to_stage', {
-        body: { 
-          entity_id: entityId, 
-          entity_type: type, 
-          target_stage_id: targetStageId 
-        }
-      });
+      // Update the stage_id based on entity type
+      const table = type === 'lead' ? 'leads' : 'opportunities';
       
-      if (response.error) throw response.error;
+      const { data, error } = await supabase
+        .from(table)
+        .update({ stage_id: targetStageId })
+        .eq('id', entityId)
+        .select();
       
-      // Explicit cast to the expected type
-      const result = response.data as { success: boolean, message?: string, data?: any };
+      if (error) throw error;
       
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to move item');
-      }
-      
-      return result;
+      return { success: true, data };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pipeline_items'] });

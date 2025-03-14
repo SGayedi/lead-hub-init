@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from 'sonner';
 
 // Pages
 import Index from './pages/Index';
@@ -29,8 +29,8 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="crm-theme">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
+        <Router>
+          <AuthProvider>
             <Routes>
               <Route path="/" element={<Layout />}>
                 <Route index element={<Index />} />
@@ -46,9 +46,9 @@ function App() {
               </Route>
               <Route path="/auth" element={<Auth />} />
             </Routes>
-          </Router>
-          <Toaster />
-        </AuthProvider>
+            <Toaster />
+          </AuthProvider>
+        </Router>
       </QueryClientProvider>
     </ThemeProvider>
   );
