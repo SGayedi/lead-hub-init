@@ -17,17 +17,13 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_stages', type],
     queryFn: async () => {
-      // Use a more generic approach with fetch() for custom RPC functions
+      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
       const { data, error } = await supabase
-        .from('rpc')
-        .select('*')
-        .eq('name', 'get_pipeline_stages')
-        .eq('params.type_param', type)
-        .single();
+        .rpc('get_pipeline_stages', { type_param: type });
       
       if (error) throw error;
       
-      return data as unknown as PipelineStage[];
+      return data as PipelineStage[];
     }
   });
 
@@ -40,17 +36,13 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_items', type, searchTerm],
     queryFn: async () => {
-      // Use a more generic approach with fetch() for custom RPC functions
+      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
       const { data, error } = await supabase
-        .from('rpc')
-        .select('*')
-        .eq('name', 'get_pipeline_items')
-        .eq('params.type_param', type)
-        .single();
+        .rpc('get_pipeline_items', { type_param: type });
       
       if (error) throw error;
       
-      let result = data as unknown as PipelineColumn[];
+      let result = data as PipelineColumn[];
       
       // Apply client-side filtering if searchTerm is provided
       if (searchTerm && result) {
@@ -81,19 +73,17 @@ export function usePipeline(type: PipelineType = 'lead') {
       entityId: string; 
       targetStageId: string; 
     }) => {
-      // Use a more generic approach with fetch() for custom RPC functions
+      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
       const { data, error } = await supabase
-        .from('rpc')
-        .select('*')
-        .eq('name', 'move_entity_to_stage')
-        .eq('params.entity_id', entityId)
-        .eq('params.entity_type', type)
-        .eq('params.target_stage_id', targetStageId)
-        .single();
+        .rpc('move_entity_to_stage', { 
+          entity_id: entityId, 
+          entity_type: type, 
+          target_stage_id: targetStageId 
+        });
       
       if (error) throw error;
       
-      const result = data as unknown as { success: boolean, message?: string, data?: any };
+      const result = data as { success: boolean, message?: string, data?: any };
       
       if (!result.success) {
         throw new Error(result.message || 'Failed to move item');
