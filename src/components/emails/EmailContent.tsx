@@ -15,6 +15,8 @@ interface EmailContentProps {
   isOutlookConnected: boolean | null;
   isConfigComplete: boolean;
   authorizeOutlook: () => void;
+  authUrl: string | null;
+  resetAuthUrl: () => void;
 }
 
 export function EmailContent({
@@ -26,7 +28,9 @@ export function EmailContent({
   setCurrentPage,
   isOutlookConnected,
   isConfigComplete,
-  authorizeOutlook
+  authorizeOutlook,
+  authUrl,
+  resetAuthUrl
 }: EmailContentProps) {
   const itemsPerPage = 10;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -39,6 +43,8 @@ export function EmailContent({
         isOutlookConnected={isOutlookConnected} 
         isConfigComplete={isConfigComplete}
         authorizeOutlook={authorizeOutlook}
+        authUrl={authUrl}
+        resetAuthUrl={resetAuthUrl}
       />
 
       {isOutlookConnected && (

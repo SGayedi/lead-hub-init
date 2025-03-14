@@ -7,6 +7,7 @@ import { checkOutlookSetup, initiateOutlookAuthorization } from '@/utils/outlook
 export function useOutlookAuthorization() {
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -55,15 +56,15 @@ export function useOutlookAuthorization() {
       const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
       const callbackUrl = `${baseUrl}/inbox`;
       
-      // Pass the callback URL as a parameter so the edge function can use it
-      const authUrl = await initiateOutlookAuthorization(callbackUrl);
+      // Get the authorization URL
+      const url = await initiateOutlookAuthorization(callbackUrl);
       
-      // Open in a new tab/window to avoid navigating away
-      window.open(authUrl, '_blank', 'noopener,noreferrer');
+      // Set the auth URL to be used by the UI
+      setAuthUrl(url);
       
       toast({
-        title: "Authentication Started",
-        description: "Please complete authentication in the new window and return to this page.",
+        title: "Authentication Ready",
+        description: "Please complete the authentication in the dialog.",
       });
       
     } catch (err: any) {
@@ -80,9 +81,15 @@ export function useOutlookAuthorization() {
     }
   };
 
+  const resetAuthUrl = () => {
+    setAuthUrl(null);
+  };
+
   return {
     isLoading,
     configError,
-    authorizeOutlook
+    authUrl,
+    authorizeOutlook,
+    resetAuthUrl
   };
 }

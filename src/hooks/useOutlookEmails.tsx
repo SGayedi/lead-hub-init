@@ -9,7 +9,13 @@ export type { OutlookEmail };
 export function useOutlookEmails() {
   const { emails, fetchEmails } = useOutlookEmailFetch();
   const { isLoading: isSyncing, error: syncError, syncEmails } = useOutlookSync();
-  const { isLoading: isAuthorizing, configError, authorizeOutlook } = useOutlookAuthorization();
+  const { 
+    isLoading: isAuthorizing, 
+    configError, 
+    authUrl, 
+    authorizeOutlook, 
+    resetAuthUrl 
+  } = useOutlookAuthorization();
 
   // Combine loading states
   const isLoading = isSyncing || isAuthorizing;
@@ -22,8 +28,10 @@ export function useOutlookEmails() {
     isLoading,
     error,
     configError,
+    authUrl,
     syncEmails,
     fetchEmails,
-    authorizeOutlook
+    authorizeOutlook,
+    resetAuthUrl
   };
 }

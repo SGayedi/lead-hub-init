@@ -7,11 +7,15 @@ import { useOutlookAuth } from "@/hooks/useOutlookAuth";
 import { useOutlookEmails } from "@/hooks/useOutlookEmails";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useMediaQuery } from "@/hooks/use-mobile";
 
 export default function Settings() {
   const [microsoftStatus, setMicrosoftStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
-  const { authorizeOutlook } = useOutlookEmails();
+  const { authorizeOutlook, authUrl, resetAuthUrl } = useOutlookEmails();
   const { toast } = useToast();
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
@@ -126,6 +130,33 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Authentication Dialog/Sheet */}
+      {isMobile ? (
+        <Sheet open={!!authUrl} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <SheetContent side="bottom" className="h-[85vh] p-0">
+            {authUrl && (
+              <iframe 
+                src={authUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title="Microsoft Authentication"
+              />
+            )}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={!!authUrl} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <DialogContent className="p-0 max-w-[800px] h-[600px]">
+            {authUrl && (
+              <iframe 
+                src={authUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title="Microsoft Authentication"
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
