@@ -17,7 +17,7 @@ export function useOutlookAuth() {
       const state = params.get('state');
       
       if (code || error) {
-        // Remove the query parameters from URL
+        // Remove the query parameters from URL without changing the path
         navigate(location.pathname, { replace: true });
       }
       
@@ -57,8 +57,8 @@ export function useOutlookAuth() {
             description: "Your Outlook account has been connected!",
           });
           
-          // Simple redirect back to inbox after successful connection
-          navigate('/inbox', { replace: true });
+          // Refresh the current page instead of navigating
+          window.location.reload();
         } catch (error) {
           console.error("Error in callback processing:", error);
           toast({

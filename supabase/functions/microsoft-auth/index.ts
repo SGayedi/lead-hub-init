@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -15,7 +16,8 @@ const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET");
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 
 // Set a default fallback redirect URI based on the request URL if not provided
-const getRedirectUri = (req) => {
+const getRedirectUri = (req, callbackUrl) => {
+  if (callbackUrl) return callbackUrl;
   if (REDIRECT_URI) return REDIRECT_URI;
   
   try {
@@ -49,9 +51,12 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const body = await req.json();
-    const { path } = body;
+    const { path, callbackUrl } = body;
     
     console.log(`Processing path: ${path}`);
+    if (callbackUrl) {
+      console.log(`Using provided callback URL: ${callbackUrl}`);
+    }
 
     // Special endpoint for checking setup status that doesn't require authentication
     if (path === 'check-setup') {
@@ -125,8 +130,8 @@ serve(async (req) => {
           // Generate Microsoft OAuth URL
           const scope = encodeURIComponent('offline_access Mail.Read');
           
-          // Get the appropriate redirect URI
-          const redirectUri = getRedirectUri(req);
+          // Get the appropriate redirect URI, preferring the one provided in the request
+          const redirectUri = getRedirectUri(req, callbackUrl);
           console.log('Using redirect URI:', redirectUri);
           
           // Ensure the redirect URI is properly encoded
@@ -164,7 +169,7 @@ serve(async (req) => {
         const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
         
         // Get the appropriate redirect URI
-        const redirectUri = getRedirectUri(req);
+        const redirectUri = getRedirectUri(req, callbackUrl);
         console.log('Using redirect URI for token exchange:', redirectUri);
         
         const formData = new URLSearchParams({

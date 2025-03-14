@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 // Check if Outlook configuration is complete
 export async function checkOutlookSetup() {
@@ -60,14 +59,17 @@ export async function fetchOutlookEmails(filter?: string) {
 }
 
 // Initiate Microsoft OAuth flow
-export async function initiateOutlookAuthorization() {
+export async function initiateOutlookAuthorization(callbackUrl?: string) {
   try {
     console.log('Starting Microsoft OAuth flow...');
     
     // Call the authorization endpoint to get the OAuth URL
     const authResponse = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
-      body: { path: 'authorize' },
+      body: { 
+        path: 'authorize',
+        callbackUrl
+      },
     });
     
     console.log('Authorization response:', authResponse);

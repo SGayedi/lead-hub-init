@@ -50,11 +50,21 @@ export function useOutlookAuthorization() {
       
       console.log('Configuration is valid, proceeding to authorization...');
       
-      const authUrl = await initiateOutlookAuthorization();
+      // Get the current URL for building the redirect
+      const currentUrl = new URL(window.location.href);
+      const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+      const callbackUrl = `${baseUrl}/inbox`;
       
-      // Instead of popup, redirect directly in the same window
-      // This avoids popup blockers entirely
-      window.location.href = authUrl;
+      // Pass the callback URL as a parameter so the edge function can use it
+      const authUrl = await initiateOutlookAuthorization(callbackUrl);
+      
+      // Open in a new tab/window to avoid navigating away
+      window.open(authUrl, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: "Authentication Started",
+        description: "Please complete authentication in the new window and return to this page.",
+      });
       
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
