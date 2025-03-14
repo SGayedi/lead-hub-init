@@ -17,13 +17,14 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_stages', type],
     queryFn: async () => {
-      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
+      // For custom functions not in the typed schema, we need to use any type for RPC call
       const { data, error } = await supabase
-        .rpc('get_pipeline_stages', { type_param: type });
+        .rpc('get_pipeline_stages', { type_param: type } as any);
       
       if (error) throw error;
       
-      return data as PipelineStage[];
+      // Explicit cast to unknown first, then to the expected type
+      return (data as unknown) as PipelineStage[];
     }
   });
 
@@ -36,13 +37,14 @@ export function usePipeline(type: PipelineType = 'lead') {
   } = useQuery({
     queryKey: ['pipeline_items', type, searchTerm],
     queryFn: async () => {
-      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
+      // For custom functions not in the typed schema, we need to use any type for RPC call
       const { data, error } = await supabase
-        .rpc('get_pipeline_items', { type_param: type });
+        .rpc('get_pipeline_items', { type_param: type } as any);
       
       if (error) throw error;
       
-      let result = data as PipelineColumn[];
+      // Explicit cast to unknown first, then to the expected type
+      let result = (data as unknown) as PipelineColumn[];
       
       // Apply client-side filtering if searchTerm is provided
       if (searchTerm && result) {
@@ -73,17 +75,18 @@ export function usePipeline(type: PipelineType = 'lead') {
       entityId: string; 
       targetStageId: string; 
     }) => {
-      // For custom functions not in the typed schema, we need to use direct rpc call with type assertions
+      // For custom functions not in the typed schema, we need to use any type for RPC call
       const { data, error } = await supabase
         .rpc('move_entity_to_stage', { 
           entity_id: entityId, 
           entity_type: type, 
           target_stage_id: targetStageId 
-        });
+        } as any);
       
       if (error) throw error;
       
-      const result = data as { success: boolean, message?: string, data?: any };
+      // Explicit cast to unknown first, then to the expected type
+      const result = (data as unknown) as { success: boolean, message?: string, data?: any };
       
       if (!result.success) {
         throw new Error(result.message || 'Failed to move item');
