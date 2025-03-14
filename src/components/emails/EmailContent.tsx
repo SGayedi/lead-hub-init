@@ -73,15 +73,30 @@ export function EmailContent({
 
   // Show empty state if no emails
   if (!emails || emails.length === 0) {
-    return <EmptyInboxState activeTab={activeTab} />;
+    return <EmptyInboxState message={
+      activeTab === "inbox" ? "Your inbox is empty" :
+      activeTab === "drafts" ? "No drafts found" :
+      activeTab === "sent" ? "No sent messages" :
+      "No archived messages"
+    } />;
   }
+
+  // Calculate the page range for emails
+  const itemsPerPage = 10;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEmails = emails.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(emails.length / itemsPerPage);
 
   // Show emails list
   return (
     <EmailsList 
-      emails={emails} 
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
+      emails={paginatedEmails} 
+      isLoading={false}
+      error={null}
+      activeTab={activeTab}
+      startIndex={startIndex}
+      endIndex={endIndex}
     />
   );
 }
