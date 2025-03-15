@@ -13,15 +13,15 @@ import { Loader2, Download, Upload, Database, RefreshCcw, AlertTriangle } from "
 
 export default function DataManagement() {
   const [exporting, setExporting] = useState(false);
-  const [selectedTable, setSelectedTable] = useState("leads");
+  const [selectedTable, setSelectedTable] = useState<"leads" | "opportunities" | "tasks" | "meetings" | "profiles">("leads");
   const [logClearing, setLogClearing] = useState(false);
 
   const tables = [
-    { name: "leads", label: "Leads" },
-    { name: "opportunities", label: "Opportunities" },
-    { name: "tasks", label: "Tasks" },
-    { name: "meetings", label: "Meetings" },
-    { name: "profiles", label: "User Profiles" },
+    { name: "leads" as const, label: "Leads" },
+    { name: "opportunities" as const, label: "Opportunities" },
+    { name: "tasks" as const, label: "Tasks" },
+    { name: "meetings" as const, label: "Meetings" },
+    { name: "profiles" as const, label: "User Profiles" },
   ];
 
   const handleExportTable = async () => {

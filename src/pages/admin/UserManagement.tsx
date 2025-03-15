@@ -29,7 +29,7 @@ interface User {
   id: string;
   email: string;
   full_name: string | null;
-  role: Role;
+  role: Role | string; // Allow string to handle DB values that may not match our enum
   created_at: string;
 }
 
@@ -68,7 +68,13 @@ export default function UserManagement() {
       
       if (error) throw error;
       
-      setUsers(data || []);
+      // Transform the data to ensure role compatibility
+      const transformedData: User[] = (data || []).map(item => ({
+        ...item,
+        role: item.role as Role
+      }));
+      
+      setUsers(transformedData);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');

@@ -22,15 +22,17 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Json } from "@/integrations/supabase/types";
 
 interface EmailTemplate {
   id: string;
   name: string;
   subject: string;
   body: string;
-  variables: Record<string, string>;
+  variables: Record<string, string> | null;
   created_at: string;
   updated_at: string;
+  created_by?: string | null;
 }
 
 export default function EmailTemplates() {
@@ -81,8 +83,14 @@ export default function EmailTemplates() {
       
       if (error) throw error;
       
-      setTemplates(data || []);
-      setFilteredTemplates(data || []);
+      // Transform data to match our EmailTemplate interface
+      const transformedData: EmailTemplate[] = (data || []).map(item => ({
+        ...item,
+        variables: item.variables as Record<string, string> | null
+      }));
+      
+      setTemplates(transformedData);
+      setFilteredTemplates(transformedData);
     } catch (error) {
       console.error('Error fetching email templates:', error);
       toast.error('Failed to load email templates');
