@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,47 +23,48 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Fetch user count
+        // Use the more reliable .count() method instead of select + count: 'exact'
+        // User count
         const { count: userCount, error: userError } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true });
+          .count();
         
         if (userError) throw userError;
         
-        // Fetch lead count
+        // Lead count
         const { count: leadCount, error: leadError } = await supabase
           .from('leads')
-          .select('*', { count: 'exact', head: true });
+          .count();
         
         if (leadError) throw leadError;
         
-        // Fetch opportunity count
+        // Opportunity count
         const { count: opportunityCount, error: oppError } = await supabase
           .from('opportunities')
-          .select('*', { count: 'exact', head: true });
+          .count();
         
         if (oppError) throw oppError;
         
-        // Fetch active task count
+        // Active task count
         const { count: activeTaskCount, error: taskError } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .count()
           .eq('status', 'pending');
         
         if (taskError) throw taskError;
         
-        // Fetch completed task count
+        // Completed task count
         const { count: completedTaskCount, error: complTaskError } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .count()
           .eq('status', 'completed');
         
         if (complTaskError) throw complTaskError;
         
-        // Fetch meeting count
+        // Meeting count
         const { count: meetingCount, error: meetingError } = await supabase
           .from('meetings')
-          .select('*', { count: 'exact', head: true });
+          .count();
         
         if (meetingError) throw meetingError;
         
@@ -74,10 +74,20 @@ export default function AdminDashboard() {
         
         const { count: newUserCount, error: newUserError } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .count()
           .gte('created_at', lastWeek.toISOString());
         
         if (newUserError) throw newUserError;
+        
+        console.log('Stats fetched:', {
+          userCount,
+          newUserCount,
+          leadCount,
+          opportunityCount,
+          meetingCount,
+          activeTaskCount,
+          completedTaskCount
+        });
         
         setStats([
           {
@@ -137,10 +147,8 @@ export default function AdminDashboard() {
       }
     };
 
-    if (adminUser) {
-      fetchDashboardStats();
-    }
-  }, [adminUser]);
+    fetchDashboardStats();
+  }, []); // Empty dependency array means this runs once on component mount
 
   return (
     <div className="space-y-6">
