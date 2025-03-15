@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -8,7 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipTrigger,
+  TooltipProvider 
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -89,53 +95,57 @@ export function AdminLayout() {
 
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="space-y-1 px-2">
-          {navItems.map((item) => (
-            <Tooltip key={item.path} delayDuration={0}>
-              <TooltipTrigger asChild>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center px-3 py-2 rounded-md transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted",
-                      collapsed && "justify-center"
-                    )
-                  }
-                  onClick={isMobile ? toggleMobileMenu : undefined}
-                >
-                  {item.icon}
-                  {!collapsed && <span className="ml-3">{item.name}</span>}
-                </NavLink>
-              </TooltipTrigger>
-              {collapsed && (
-                <TooltipContent side="right">{item.name}</TooltipContent>
-              )}
-            </Tooltip>
-          ))}
+          <TooltipProvider>
+            {navItems.map((item) => (
+              <Tooltip key={item.path} delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center px-3 py-2 rounded-md transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted",
+                        collapsed && "justify-center"
+                      )
+                    }
+                    onClick={isMobile ? toggleMobileMenu : undefined}
+                  >
+                    {item.icon}
+                    {!collapsed && <span className="ml-3">{item.name}</span>}
+                  </NavLink>
+                </TooltipTrigger>
+                {collapsed && (
+                  <TooltipContent side="right">{item.name}</TooltipContent>
+                )}
+              </Tooltip>
+            ))}
+          </TooltipProvider>
         </nav>
       </div>
 
       <div className="p-4 border-t border-border">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className={cn(
-                "w-full flex items-center", 
-                collapsed && "justify-center"
-              )} 
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-5 w-5" />
-              {!collapsed && <span className="ml-2">Sign Out</span>}
-            </Button>
-          </TooltipTrigger>
-          {collapsed && (
-            <TooltipContent side="right">Sign Out</TooltipContent>
-          )}
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className={cn(
+                  "w-full flex items-center", 
+                  collapsed && "justify-center"
+                )} 
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-5 w-5" />
+                {!collapsed && <span className="ml-2">Sign Out</span>}
+              </Button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right">Sign Out</TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
