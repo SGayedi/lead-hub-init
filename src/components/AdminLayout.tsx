@@ -79,11 +79,11 @@ export function AdminLayout() {
           <div className="font-semibold text-lg">Admin Portal</div>
         )}
         {isMobile ? (
-          <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+          <Button variant="ghost" size="icon" onClick={toggleMobileMenu} className="ml-auto">
             <X className="h-5 w-5" />
           </Button>
         ) : (
-          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className={cn(!collapsed && "ml-auto")}>
             {collapsed ? (
               <ChevronRight className="h-5 w-5" />
             ) : (
@@ -93,8 +93,8 @@ export function AdminLayout() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
-        <nav className="space-y-1 px-2">
+      <div className="flex-1 overflow-y-auto py-4">
+        <nav className="space-y-1 px-3">
           <TooltipProvider>
             {navItems.map((item) => (
               <Tooltip key={item.path} delayDuration={0}>
@@ -107,7 +107,7 @@ export function AdminLayout() {
                         isActive
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted",
-                        collapsed && "justify-center"
+                        collapsed ? "justify-center" : "justify-start"
                       )
                     }
                     onClick={isMobile ? toggleMobileMenu : undefined}
@@ -133,7 +133,7 @@ export function AdminLayout() {
                 variant="ghost" 
                 className={cn(
                   "w-full flex items-center", 
-                  collapsed && "justify-center"
+                  collapsed ? "justify-center" : "justify-start"
                 )} 
                 onClick={handleSignOut}
               >
