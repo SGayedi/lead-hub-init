@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -137,6 +136,8 @@ serve(async (req) => {
           // Ensure the redirect URI is properly encoded
           const encodedRedirectUri = encodeURIComponent(redirectUri);
           
+          // Generate the auth URL, now using a direct link approach instead of relying on iframe
+          // This is more reliable for OAuth flows that may have X-Frame-Options restrictions
           const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
           
           console.log('Generated auth URL:', authUrl);

@@ -19,15 +19,25 @@ export function InboxContainer() {
   
   const { emails, isLoading, error, configError, syncEmails, fetchEmails, authorizeOutlook, authUrl, resetAuthUrl, authError } = useOutlookEmails();
   
+  // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
   
   useEffect(() => {
     async function checkOutlookConnection() {
       try {
-        const { data, error } = await supabase.functions.invoke('check-outlook-connection');
+        // Check if Outlook is connected
+        const { data, error } = await supabase.rpc('check_outlook_connection');
         if (error) throw error;
-        setIsOutlookConnected(data?.connected || false);
-        setIsConfigComplete(data?.configurationComplete || false);
+        setIsOutlookConnected(data || false);
+        
+        // Check if the configuration is complete
+        const configResponse = await supabase.functions.invoke('microsoft-auth', {
+          method: 'POST',
+          body: { path: 'check-setup' },
+        });
+        
+        if (configResponse.error) throw configResponse.error;
+        setIsConfigComplete(configResponse.data?.status === 'complete');
       } catch (err) {
         console.error("Error checking Outlook connection:", err);
         setIsOutlookConnected(false);

@@ -17,9 +17,47 @@ export default function Settings() {
   const { authorizeOutlook, authUrl, resetAuthUrl, authError } = useOutlookEmails();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
+
+  // Handle the OAuth authentication opening in a new window
+  useEffect(() => {
+    let authWindow: Window | null = null;
+    
+    if (authUrl) {
+      // Open the auth URL in a new window
+      authWindow = window.open(authUrl, 'microsoft-auth', 'width=800,height=600');
+      
+      // Set up a listener to detect when the window is closed
+      const checkClosed = setInterval(() => {
+        if (authWindow && authWindow.closed) {
+          clearInterval(checkClosed);
+          resetAuthUrl();
+        }
+      }, 500);
+      
+      // Show the auth prompt dialog
+      setShowAuthPrompt(true);
+      
+      // Clean up function
+      return () => {
+        clearInterval(checkClosed);
+        if (authWindow && !authWindow.closed) {
+          authWindow.close();
+        }
+      };
+    }
+    
+    return undefined;
+  }, [authUrl, resetAuthUrl]);
+  
+  useEffect(() => {
+    if (!authUrl) {
+      setShowAuthPrompt(false);
+    }
+  }, [authUrl]);
 
   // Check if Microsoft is connected
   useEffect(() => {
@@ -134,8 +172,8 @@ export default function Settings() {
 
       {/* Authentication Dialog/Sheet */}
       {isMobile ? (
-        <Sheet open={!!authUrl || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
-          <SheetContent side="bottom" className="h-[85vh] p-0">
+        <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <SheetContent side="bottom" className="h-[85vh] p-4">
             {authError ? (
               <div className="p-4">
                 <Alert variant="destructive">
@@ -148,21 +186,25 @@ export default function Settings() {
                   </AlertDescription>
                 </Alert>
               </div>
-            ) : authUrl ? (
-              <iframe 
-                src={authUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Microsoft Authentication"
-                onError={() => {
-                  console.error("Iframe failed to load");
-                }}
-              />
-            ) : null}
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <h3 className="text-xl font-semibold mb-4">Microsoft Authentication</h3>
+                <p className="mb-6">A new window has been opened for you to sign in with your Microsoft account.</p>
+                <p className="text-muted-foreground">Please complete the authentication in the opened window. This dialog will close automatically when you're done.</p>
+                <Button 
+                  className="mt-8" 
+                  variant="outline" 
+                  onClick={resetAuthUrl}
+                >
+                  Cancel Authentication
+                </Button>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       ) : (
-        <Dialog open={!!authUrl || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
-          <DialogContent className="p-0 max-w-[800px] h-[600px]">
+        <Dialog open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
+          <DialogContent className="sm:max-w-[425px]">
             {authError ? (
               <div className="p-6">
                 <DialogHeader>
@@ -178,16 +220,23 @@ export default function Settings() {
                   </AlertDescription>
                 </Alert>
               </div>
-            ) : authUrl ? (
-              <iframe 
-                src={authUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Microsoft Authentication"
-                onError={(e) => {
-                  console.error("Iframe failed to load", e);
-                }}
-              />
-            ) : null}
+            ) : (
+              <div className="text-center py-4">
+                <DialogHeader>
+                  <DialogTitle>Microsoft Authentication</DialogTitle>
+                </DialogHeader>
+                <div className="mt-6 mb-8">
+                  <p className="mb-4">A new window has been opened for you to sign in with your Microsoft account.</p>
+                  <p className="text-muted-foreground">Please complete the authentication in the opened window. This dialog will close automatically when you're done.</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={resetAuthUrl}
+                >
+                  Cancel Authentication
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       )}
