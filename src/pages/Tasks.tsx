@@ -98,6 +98,18 @@ export default function Tasks() {
     setDraggingTaskId(null);
   };
   
+  // Pass dragging handlers down to TaskCard component
+  const renderTaskCard = (task: Task) => (
+    <div
+      key={task.id}
+      draggable={true}
+      onDragStart={(e) => handleDragStart(e, task.id)}
+      className="cursor-grab active:cursor-grabbing"
+    >
+      <TaskCard task={task} onView={handleViewTask} />
+    </div>
+  );
+  
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -209,16 +221,7 @@ export default function Tasks() {
                     Pending ({pendingTasks.length})
                   </h3>
                   <div className="space-y-3">
-                    {pendingTasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        className="cursor-grab active:cursor-grabbing"
-                      >
-                        <TaskCard task={task} onView={handleViewTask} />
-                      </div>
-                    ))}
+                    {pendingTasks.map(task => renderTaskCard(task))}
                     {pendingTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No pending tasks
@@ -239,16 +242,7 @@ export default function Tasks() {
                     In Progress ({inProgressTasks.length})
                   </h3>
                   <div className="space-y-3">
-                    {inProgressTasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        className="cursor-grab active:cursor-grabbing"
-                      >
-                        <TaskCard task={task} onView={handleViewTask} />
-                      </div>
-                    ))}
+                    {inProgressTasks.map(task => renderTaskCard(task))}
                     {inProgressTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No tasks in progress
@@ -269,16 +263,7 @@ export default function Tasks() {
                     Completed ({completedTasks.length})
                   </h3>
                   <div className="space-y-3">
-                    {completedTasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        className="cursor-grab active:cursor-grabbing"
-                      >
-                        <TaskCard task={task} onView={handleViewTask} />
-                      </div>
-                    ))}
+                    {completedTasks.map(task => renderTaskCard(task))}
                     {completedTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No completed tasks
