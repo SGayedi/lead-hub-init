@@ -46,15 +46,15 @@ export default function Meetings() {
   const getMeetingTypeColor = (type: MeetingType) => {
     switch (type) {
       case 'first':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
       case 'technical':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
       case 'second':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
       case 'other':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
     }
   };
   
@@ -95,8 +95,8 @@ export default function Meetings() {
         </Button>
       </header>
       
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="bg-card text-card-foreground rounded-lg shadow-sm border dark:border-slate-700">
+        <div className="flex flex-col md:flex-row gap-4 mb-6 p-6">
           <div className="flex-1 relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -124,7 +124,7 @@ export default function Meetings() {
           </Select>
         </div>
         
-        <Tabs defaultValue="calendar" className="mt-6">
+        <Tabs defaultValue="calendar" className="mt-6 px-6 pb-6">
           <TabsList>
             <TabsTrigger value="calendar" className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function Meetings() {
                 {meetings.map(meeting => (
                   <Card 
                     key={meeting.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:shadow-md transition-shadow dark:border-slate-700"
                     onClick={() => handleMeetingClick(meeting)}
                   >
                     <CardHeader className="pb-2">

@@ -9,7 +9,7 @@ interface EmptyInboxStateProps {
 
 export function EmptyInboxState({ message }: EmptyInboxStateProps) {
   return (
-    <Card className="bg-card border-border dark:border-slate-700">
+    <Card className="border-border dark:border-slate-700">
       <CardHeader>
         <CardTitle className="text-center text-foreground">{message}</CardTitle>
       </CardHeader>

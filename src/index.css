@@ -76,7 +76,7 @@ html.dark {
   @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
 }
 
-/* Custom styles for card in dark mode */
+/* Custom styles for cards and backgrounds in dark mode */
 .dark .bg-white {
   @apply bg-card;
 }
@@ -91,6 +91,16 @@ html.dark {
 
 .dark .bg-gray-100 {
   @apply bg-muted/40;
+}
+
+/* Fix for light backgrounds in dark mode */
+.dark .white-card {
+  @apply bg-card border-slate-700;
+}
+
+/* Fix for light backgrounds in pipeline, meetings and tasks pages */
+.dark div[class*="bg-white"] {
+  @apply bg-card;
 }
 
 @keyframes fadeIn {
