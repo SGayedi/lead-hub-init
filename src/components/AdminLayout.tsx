@@ -94,7 +94,7 @@ export function AdminLayout() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-3">
+        <nav className="space-y-0.5 px-3">
           <TooltipProvider>
             {navItems.map((item) => (
               <Tooltip key={item.path} delayDuration={0}>
@@ -103,16 +103,18 @@ export function AdminLayout() {
                     to={item.path}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center px-3 py-2 rounded-md transition-colors",
+                        "flex items-center h-10 px-3 py-2 rounded-md transition-colors text-sm font-medium",
                         isActive
                           ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted",
+                          : "hover:bg-muted text-muted-foreground hover:text-foreground",
                         collapsed ? "justify-center" : "justify-start"
                       )
                     }
                     onClick={isMobile ? toggleMobileMenu : undefined}
                   >
-                    {item.icon}
+                    <span className="flex items-center">
+                      {item.icon}
+                    </span>
                     {!collapsed && <span className="ml-3">{item.name}</span>}
                   </NavLink>
                 </TooltipTrigger>
@@ -132,13 +134,15 @@ export function AdminLayout() {
               <Button 
                 variant="ghost" 
                 className={cn(
-                  "w-full flex items-center", 
+                  "w-full flex items-center text-sm font-medium", 
                   collapsed ? "justify-center" : "justify-start"
                 )} 
                 onClick={handleSignOut}
               >
-                <LogOut className="h-5 w-5" />
-                {!collapsed && <span className="ml-2">Sign Out</span>}
+                <span className="flex items-center">
+                  <LogOut className="h-5 w-5" />
+                </span>
+                {!collapsed && <span className="ml-3">Sign Out</span>}
               </Button>
             </TooltipTrigger>
             {collapsed && (
