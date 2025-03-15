@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -161,7 +160,7 @@ export default function UserManagement() {
     }
   };
 
-  const getRoleDisplayName = (role: Role) => {
+  const getRoleDisplayName = (role: Role | string) => {
     switch (role) {
       case 'investor_services':
         return 'Investor Services';

@@ -11,9 +11,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download, Upload, Database, RefreshCcw, AlertTriangle } from "lucide-react";
 
+// Define a type for the valid table names
+type TableName = "leads" | "opportunities" | "tasks" | "meetings" | "profiles";
+
 export default function DataManagement() {
   const [exporting, setExporting] = useState(false);
-  const [selectedTable, setSelectedTable] = useState<"leads" | "opportunities" | "tasks" | "meetings" | "profiles">("leads");
+  const [selectedTable, setSelectedTable] = useState<TableName>("leads");
   const [logClearing, setLogClearing] = useState(false);
 
   const tables = [
@@ -120,7 +123,7 @@ export default function DataManagement() {
                   id="table-select"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                   value={selectedTable}
-                  onChange={(e) => setSelectedTable(e.target.value)}
+                  onChange={(e) => setSelectedTable(e.target.value as TableName)}
                 >
                   {tables.map(table => (
                     <option key={table.name} value={table.name}>
