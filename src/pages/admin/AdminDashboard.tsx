@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,61 +24,67 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Use the more reliable .count() method instead of select + count: 'exact'
         // User count
-        const { count: userCount, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('profiles')
-          .count();
+          .select('*', { count: 'exact', head: true });
         
         if (userError) throw userError;
+        const userCount = userData?.length ?? 0;
         
         // Lead count
-        const { count: leadCount, error: leadError } = await supabase
+        const { data: leadData, error: leadError } = await supabase
           .from('leads')
-          .count();
+          .select('*', { count: 'exact', head: true });
         
         if (leadError) throw leadError;
+        const leadCount = leadData?.length ?? 0;
         
         // Opportunity count
-        const { count: opportunityCount, error: oppError } = await supabase
+        const { data: opportunityData, error: oppError } = await supabase
           .from('opportunities')
-          .count();
+          .select('*', { count: 'exact', head: true });
         
         if (oppError) throw oppError;
+        const opportunityCount = opportunityData?.length ?? 0;
         
         // Active task count
-        const { count: activeTaskCount, error: taskError } = await supabase
+        const { data: activeTaskData, error: taskError } = await supabase
           .from('tasks')
-          .count()
+          .select('*', { count: 'exact', head: true })
           .eq('status', 'pending');
         
         if (taskError) throw taskError;
+        const activeTaskCount = activeTaskData?.length ?? 0;
         
         // Completed task count
-        const { count: completedTaskCount, error: complTaskError } = await supabase
+        const { data: completedTaskData, error: complTaskError } = await supabase
           .from('tasks')
-          .count()
+          .select('*', { count: 'exact', head: true })
           .eq('status', 'completed');
         
         if (complTaskError) throw complTaskError;
+        const completedTaskCount = completedTaskData?.length ?? 0;
         
         // Meeting count
-        const { count: meetingCount, error: meetingError } = await supabase
+        const { data: meetingData, error: meetingError } = await supabase
           .from('meetings')
-          .count();
+          .select('*', { count: 'exact', head: true });
         
         if (meetingError) throw meetingError;
+        const meetingCount = meetingData?.length ?? 0;
         
         // Get new user registrations last 7 days
         const lastWeek = new Date();
         lastWeek.setDate(lastWeek.getDate() - 7);
         
-        const { count: newUserCount, error: newUserError } = await supabase
+        const { data: newUserData, error: newUserError } = await supabase
           .from('profiles')
-          .count()
+          .select('*', { count: 'exact', head: true })
           .gte('created_at', lastWeek.toISOString());
         
         if (newUserError) throw newUserError;
+        const newUserCount = newUserData?.length ?? 0;
         
         console.log('Stats fetched:', {
           userCount,
@@ -92,49 +99,49 @@ export default function AdminDashboard() {
         setStats([
           {
             title: 'Total Users',
-            value: userCount || 0,
+            value: userCount,
             description: 'Registered users in the system',
             icon: <Users className="h-5 w-5" />,
             color: 'bg-blue-500'
           },
           {
             title: 'New Users (7d)',
-            value: newUserCount || 0,
+            value: newUserCount,
             description: 'New registrations in last 7 days',
             icon: <UserPlus className="h-5 w-5" />,
             color: 'bg-green-500'
           },
           {
             title: 'Total Leads',
-            value: leadCount || 0,
+            value: leadCount,
             description: 'All leads in the system',
             icon: <FileText className="h-5 w-5" />,
             color: 'bg-purple-500'
           },
           {
             title: 'Opportunities',
-            value: opportunityCount || 0,
+            value: opportunityCount,
             description: 'Current opportunities',
             icon: <BriefcaseBusiness className="h-5 w-5" />,
             color: 'bg-amber-500'
           },
           {
             title: 'Meetings',
-            value: meetingCount || 0,
+            value: meetingCount,
             description: 'Scheduled meetings',
             icon: <Calendar className="h-5 w-5" />,
             color: 'bg-indigo-500'
           },
           {
             title: 'Active Tasks',
-            value: activeTaskCount || 0,
+            value: activeTaskCount,
             description: 'Tasks in progress',
             icon: <Clock className="h-5 w-5" />,
             color: 'bg-red-500'
           },
           {
             title: 'Completed Tasks',
-            value: completedTaskCount || 0,
+            value: completedTaskCount,
             description: 'Completed tasks',
             icon: <CheckCircle2 className="h-5 w-5" />,
             color: 'bg-teal-500'
