@@ -64,7 +64,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         isPasswordValid = await bcrypt.compare(password, data.password_hash);
       }
       
-      if (!isPasswordValid) throw new Error('Invalid password');
+      if (!isPasswordValid) throw new Error('Invalid admin credentials');
       
       // Update last login time
       await supabase
@@ -96,6 +96,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in as admin');
       console.error(error);
+      throw error; // Re-throw to allow the Auth component to handle the error
     } finally {
       setAdminLoading(false);
     }

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -19,7 +19,6 @@ import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 
 // Admin Pages
-import AdminAuth from './pages/admin/AdminAuth';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SystemSettings from './pages/admin/SystemSettings';
@@ -93,7 +92,6 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 
                 {/* Admin Routes */}
-                <Route path="/admin/auth" element={<AdminAuth />} />
                 <Route path="/admin" element={
                   <AdminProtectedRoute>
                     <AdminLayout />

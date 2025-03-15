@@ -1,21 +1,24 @@
-
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Users, Building2, PieChart, ArrowRight, Shield } from 'lucide-react';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { User, Users, Building2, PieChart, ArrowRight } from 'lucide-react';
 
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { adminUser } = useAdminAuth();
 
-  // Redirect to Leads page if already logged in
+  // Redirect based on user type
   useEffect(() => {
-    if (user) {
+    if (adminUser) {
+      navigate('/admin/dashboard');
+    } else if (user) {
       navigate('/leads');
     }
-  }, [user, navigate]);
+  }, [user, adminUser, navigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,16 +28,10 @@ export default function Index() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Manage leads, opportunities, meetings, and tasks in one integrated platform
           </p>
-          <div className="mt-8 flex justify-center space-x-4">
+          <div className="mt-8 flex justify-center">
             <Button size="lg" onClick={() => navigate('/auth')}>
               <User className="mr-2 h-5 w-5" />
               Login / Register
-            </Button>
-            <Button variant="outline" size="lg" asChild>
-              <Link to="/admin/auth">
-                <Shield className="mr-2 h-5 w-5" />
-                Admin Portal
-              </Link>
             </Button>
           </div>
         </div>

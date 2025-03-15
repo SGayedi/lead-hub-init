@@ -8,11 +8,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Role } from "@/types/crm";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Auth() {
   const { user, signIn, signUp, loading } = useAuth();
+  const { adminUser, adminSignIn, adminLoading } = useAdminAuth();
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [formData, setFormData] = useState({
     email: "",
@@ -22,9 +25,14 @@ export default function Auth() {
   });
   const [authLoading, setAuthLoading] = useState(false);
 
-  // If already logged in, redirect to leads
+  // If already logged in as regular user, redirect to leads
   if (user) {
     return <Navigate to="/leads" replace />;
+  }
+
+  // If already logged in as admin, redirect to admin dashboard
+  if (adminUser) {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +53,22 @@ export default function Auth() {
     e.preventDefault();
     try {
       setAuthLoading(true);
+      
+      // Check if these are admin credentials first
+      if (formData.email === 'admin@example.com') {
+        try {
+          await adminSignIn(formData.email, formData.password);
+          return; // If admin login succeeds, we're done
+        } catch (error) {
+          // If admin login fails, continue to try regular user login
+          console.log("Admin login failed, trying regular login");
+        }
+      }
+      
+      // Try regular user login
       await signIn(formData.email, formData.password);
+    } catch (error: any) {
+      toast.error(error.message || "Login failed");
     } finally {
       setAuthLoading(false);
     }
@@ -62,7 +85,7 @@ export default function Auth() {
     }
   };
 
-  if (loading) {
+  if (loading || adminLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
