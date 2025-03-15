@@ -28,11 +28,11 @@
   }
  
   .dark {
-    --background: 240 3.7% 21%;
+    --background: 240 4% 13%;
     --foreground: 0 0% 98%;
-    --card: 240 4% 16%;
+    --card: 240 5% 15%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 4% 16%;
+    --popover: 240 5% 15%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
@@ -44,8 +44,8 @@
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
+    --border: 240 4.8% 25%;
+    --input: 240 4.8% 22%;
     --ring: 240 4.9% 83.9%;
   }
 }
@@ -74,6 +74,23 @@ html.dark {
 /* Custom styles for auth buttons in dark mode */
 .dark .auth-button {
   @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+}
+
+/* Custom styles for card in dark mode */
+.dark .bg-white {
+  @apply bg-card;
+}
+
+.dark .border-gray-200 {
+  @apply border-slate-700;
+}
+
+.dark .bg-gray-50 {
+  @apply bg-muted/30;
+}
+
+.dark .bg-gray-100 {
+  @apply bg-muted/40;
 }
 
 @keyframes fadeIn {

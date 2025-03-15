@@ -33,23 +33,23 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
     }
   };
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-emerald-100 text-emerald-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'archived': return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
       case 'waiting_for_approval': 
-      case 'waiting_for_details': return 'bg-blue-100 text-blue-800';
-      case 'assessment_completed': return 'bg-yellow-100 text-yellow-800';
-      case 'due_diligence_approved': return 'bg-emerald-100 text-emerald-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'waiting_for_details': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'assessment_completed': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'due_diligence_approved': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
+      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300';
     }
   };
   
@@ -64,7 +64,7 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
   };
   
   return (
-    <Card className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all">
+    <Card className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all dark:border-slate-700">
       <CardContent className="p-4">
         <div className="flex justify-between items-start">
           <div className="font-medium text-sm truncate" style={{ maxWidth: '80%' }}>
@@ -74,7 +74,7 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1 rounded-full hover:bg-gray-100">
+              <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700/50">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -110,7 +110,7 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
                 </Badge>
               </div>
               {(item as LeadPipelineItem).email && (
-                <div className="flex items-center text-xs text-gray-500 truncate">
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 truncate">
                   <Mail className="h-3 w-3 mr-1" />
                   {(item as LeadPipelineItem).email}
                 </div>
@@ -127,12 +127,12 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
                 >
                   {item.status.replace(/_/g, ' ')}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="outline" className="dark:border-slate-700 dark:text-gray-300">
                   NDA: {(item as OpportunityPipelineItem).nda_status.replace(/_/g, ' ')}
                 </Badge>
               </div>
               {(item as OpportunityPipelineItem).site_visit_scheduled && (
-                <div className="flex items-center text-xs text-gray-500">
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                   <Calendar className="h-3 w-3 mr-1" />
                   Site Visit Scheduled
                 </div>
@@ -140,7 +140,7 @@ export const PipelineCard = ({ item, type }: PipelineCardProps) => {
             </>
           )}
           
-          <div className="flex items-center text-xs text-gray-500">
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
             <Calendar className="h-3 w-3 mr-1" />
             Updated {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true })}
           </div>

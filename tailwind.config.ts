@@ -57,6 +57,9 @@ export default {
           "high-priority": "#dc2626",
           "medium-priority": "#eab308",
           "low-priority": "#22c55e",
+          "dark-high-priority": "#ef4444",
+          "dark-medium-priority": "#facc15",
+          "dark-low-priority": "#4ade80",
         },
       },
       keyframes: {

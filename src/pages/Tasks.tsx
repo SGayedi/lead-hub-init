@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PlusCircle, Search, Filter, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -50,9 +49,7 @@ export default function Tasks() {
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
     setDraggingTaskId(taskId);
-    // Set the drag data
     e.dataTransfer.setData('text/plain', taskId);
-    // Create a ghost dragging image
     const dragImage = document.createElement('div');
     dragImage.style.width = '280px';
     dragImage.style.height = '100px';
@@ -67,16 +64,16 @@ export default function Tasks() {
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.currentTarget.classList.add('bg-slate-100/80');
+    e.currentTarget.classList.add('bg-slate-100/80', 'dark:bg-slate-700/30');
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.currentTarget.classList.remove('bg-slate-100/80');
+    e.currentTarget.classList.remove('bg-slate-100/80', 'dark:bg-slate-700/30');
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetStatus: TaskStatus) => {
     e.preventDefault();
-    e.currentTarget.classList.remove('bg-slate-100/80');
+    e.currentTarget.classList.remove('bg-slate-100/80', 'dark:bg-slate-700/30');
     
     if (!draggingTaskId) return;
 
@@ -98,7 +95,6 @@ export default function Tasks() {
     setDraggingTaskId(null);
   };
   
-  // Pass dragging handlers down to TaskCard component
   const renderTaskCard = (task: Task) => (
     <div
       key={task.id}
@@ -128,8 +124,8 @@ export default function Tasks() {
         </Button>
       </header>
       
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="bg-card text-card-foreground dark:border-slate-700 rounded-lg shadow-sm border">
+        <div className="flex flex-col md:flex-row gap-4 p-6">
           <div className="flex-1 relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -186,13 +182,13 @@ export default function Tasks() {
           </Select>
         </div>
         
-        <Tabs defaultValue="kanban" className="mt-6">
-          <TabsList>
-            <TabsTrigger value="kanban" className="flex items-center gap-1">
+        <Tabs defaultValue="kanban" className="px-6 pb-6">
+          <TabsList className="bg-muted/50 dark:bg-muted/20">
+            <TabsTrigger value="kanban" className="flex items-center gap-1 data-[state=active]:bg-background dark:data-[state=active]:bg-card">
               <Filter className="h-4 w-4" />
               Kanban
             </TabsTrigger>
-            <TabsTrigger value="list" className="flex items-center gap-1">
+            <TabsTrigger value="list" className="flex items-center gap-1 data-[state=active]:bg-background dark:data-[state=active]:bg-card">
               <Calendar className="h-4 w-4" />
               List
             </TabsTrigger>
@@ -209,63 +205,60 @@ export default function Tasks() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Pending Column */}
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'pending')}
-                  className="transition-colors duration-200 rounded-lg p-2"
+                  className="transition-colors duration-200 rounded-lg p-2 dark:bg-card/40"
                 >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
-                    <span className="bg-yellow-100 w-3 h-3 rounded-full"></span>
+                    <span className="bg-yellow-100 dark:bg-yellow-400/30 w-3 h-3 rounded-full"></span>
                     Pending ({pendingTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {pendingTasks.map(task => renderTaskCard(task))}
                     {pendingTasks.length === 0 && (
-                      <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
+                      <div className="border border-dashed dark:border-slate-700 rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No pending tasks
                       </div>
                     )}
                   </div>
                 </div>
                 
-                {/* In Progress Column */}
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'in_progress')}
-                  className="transition-colors duration-200 rounded-lg p-2"
+                  className="transition-colors duration-200 rounded-lg p-2 dark:bg-card/40"
                 >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
-                    <span className="bg-blue-100 w-3 h-3 rounded-full"></span>
+                    <span className="bg-blue-100 dark:bg-blue-400/30 w-3 h-3 rounded-full"></span>
                     In Progress ({inProgressTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {inProgressTasks.map(task => renderTaskCard(task))}
                     {inProgressTasks.length === 0 && (
-                      <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
+                      <div className="border border-dashed dark:border-slate-700 rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No tasks in progress
                       </div>
                     )}
                   </div>
                 </div>
                 
-                {/* Completed Column */}
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, 'completed')}
-                  className="transition-colors duration-200 rounded-lg p-2"
+                  className="transition-colors duration-200 rounded-lg p-2 dark:bg-card/40"
                 >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
-                    <span className="bg-green-100 w-3 h-3 rounded-full"></span>
+                    <span className="bg-green-100 dark:bg-green-400/30 w-3 h-3 rounded-full"></span>
                     Completed ({completedTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {completedTasks.map(task => renderTaskCard(task))}
                     {completedTasks.length === 0 && (
-                      <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
+                      <div className="border border-dashed dark:border-slate-700 rounded-lg p-4 text-center text-muted-foreground text-sm">
                         No completed tasks
                       </div>
                     )}
@@ -295,7 +288,6 @@ export default function Tasks() {
         </Tabs>
       </div>
       
-      {/* Create Task Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-lg">
           <DialogTitle>Create New Task</DialogTitle>
@@ -303,7 +295,6 @@ export default function Tasks() {
         </DialogContent>
       </Dialog>
       
-      {/* View/Edit Task Dialog */}
       <Dialog open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
         <DialogContent className="max-w-lg">
           <DialogTitle>Edit Task</DialogTitle>
