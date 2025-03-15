@@ -1,86 +1,114 @@
 
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, LineChart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { User, Users, Building2, PieChart, ArrowRight, Shield } from 'lucide-react';
 
-const Index = () => {
+export default function Index() {
   const navigate = useNavigate();
-  
+  const { user } = useAuth();
+
+  // Redirect to Leads page if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/leads');
+    }
+  }, [user, navigate]);
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button onClick={() => navigate("/leads")}>View Leads</Button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart className="h-5 w-5" />
-              <span>Lead Statistics</span>
-            </CardTitle>
-            <CardDescription>Overview of your current leads</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">New Leads</span>
-                <span className="font-medium">24</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">In Progress</span>
-                <span className="font-medium">14</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Closed</span>
-                <span className="font-medium">8</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <LineChart className="h-5 w-5" />
-              <span>Performance</span>
-            </CardTitle>
-            <CardDescription>Your monthly conversion rate</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center h-40">
-              <div className="text-center">
-                <div className="text-2xl font-bold">32%</div>
-                <div className="text-xs text-muted-foreground">+4.3% from last month</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks you can perform</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Button className="w-full" variant="outline" onClick={() => navigate("/leads")}>
-                Manage Leads
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight mb-4">Welcome to the CRM System</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Manage leads, opportunities, meetings, and tasks in one integrated platform
+          </p>
+          <div className="mt-8 flex justify-center space-x-4">
+            <Button size="lg" onClick={() => navigate('/auth')}>
+              <User className="mr-2 h-5 w-5" />
+              Login / Register
+            </Button>
+            <Button variant="outline" size="lg" asChild>
+              <Link to="/admin/auth">
+                <Shield className="mr-2 h-5 w-5" />
+                Admin Portal
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Lead Management</CardTitle>
+              <CardDescription>Track and manage potential clients</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Users className="h-12 w-12 mb-4 text-primary opacity-80" />
+              <p className="text-sm text-muted-foreground">
+                Organize leads by status, priority, and source. Capture all essential information in one place.
+              </p>
+              <Button variant="ghost" size="sm" className="mt-4 w-full">
+                Learn More
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button className="w-full" variant="outline" onClick={() => navigate("/enquiries")}>
-                View Enquiries
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Opportunity Tracking</CardTitle>
+              <CardDescription>Convert leads to opportunities</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Building2 className="h-12 w-12 mb-4 text-primary opacity-80" />
+              <p className="text-sm text-muted-foreground">
+                Manage the complete sales pipeline from initial contact to closing deals.
+              </p>
+              <Button variant="ghost" size="sm" className="mt-4 w-full">
+                Learn More
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button className="w-full" variant="outline" onClick={() => navigate("/settings")}>
-                Account Settings
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Task Management</CardTitle>
+              <CardDescription>Stay organized and productive</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Users className="h-12 w-12 mb-4 text-primary opacity-80" />
+              <p className="text-sm text-muted-foreground">
+                Create tasks, set deadlines, and track progress to ensure nothing falls through the cracks.
+              </p>
+              <Button variant="ghost" size="sm" className="mt-4 w-full">
+                Learn More
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium">Analytics</CardTitle>
+              <CardDescription>Insights that drive decisions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PieChart className="h-12 w-12 mb-4 text-primary opacity-80" />
+              <p className="text-sm text-muted-foreground">
+                Get actionable insights with detailed reports and performance metrics.
+              </p>
+              <Button variant="ghost" size="sm" className="mt-4 w-full">
+                Learn More
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Index;
+}
