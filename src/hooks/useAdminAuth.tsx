@@ -119,7 +119,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       // Clear admin user from state and session storage
       setAdminUser(null);
       sessionStorage.removeItem('adminUser');
-      navigate('/admin/auth');
+      
+      // Navigate directly to the auth page instead of /admin/auth
+      navigate('/auth');
     } catch (error: any) {
       toast.error(error.message || 'Error signing out');
       console.error(error);
