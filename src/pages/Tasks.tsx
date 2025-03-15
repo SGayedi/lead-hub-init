@@ -18,6 +18,7 @@ import { TaskEditForm } from "@/components/TaskEditForm";
 import { useTasks } from "@/hooks/useTasks";
 import { TaskStatus, Priority, Task } from "@/types/crm";
 import { Spinner } from "@/components/Spinner";
+import { toast } from "sonner";
 
 export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
@@ -26,8 +27,9 @@ export default function Tasks() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'all' | 'assigned_to_me' | 'created_by_me'>('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   
-  const { tasks, isLoading } = useTasks({
+  const { tasks, isLoading, updateTask } = useTasks({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     priority: priorityFilter !== 'all' ? priorityFilter as Priority : undefined,
     onlyAssignedToMe: taskFilter === 'assigned_to_me',
@@ -44,6 +46,56 @@ export default function Tasks() {
     if (task) {
       setSelectedTask(task);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
+    setDraggingTaskId(taskId);
+    // Set the drag data
+    e.dataTransfer.setData('text/plain', taskId);
+    // Create a ghost dragging image
+    const dragImage = document.createElement('div');
+    dragImage.style.width = '280px';
+    dragImage.style.height = '100px';
+    dragImage.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+    dragImage.style.borderRadius = '8px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 140, 50);
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('bg-slate-100/80');
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.classList.remove('bg-slate-100/80');
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetStatus: TaskStatus) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('bg-slate-100/80');
+    
+    if (!draggingTaskId) return;
+
+    const taskToUpdate = tasks.find(task => task.id === draggingTaskId);
+    
+    if (taskToUpdate && taskToUpdate.status !== targetStatus) {
+      try {
+        await updateTask.mutateAsync({
+          id: draggingTaskId,
+          status: targetStatus
+        });
+        toast.success(`Task moved to ${targetStatus.replace('_', ' ')}`);
+      } catch (error) {
+        console.error('Error moving task:', error);
+        toast.error('Failed to move task');
+      }
+    }
+    
+    setDraggingTaskId(null);
   };
   
   return (
@@ -146,14 +198,26 @@ export default function Tasks() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Pending Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'pending')}
+                  className="transition-colors duration-200 rounded-lg p-2"
+                >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
                     <span className="bg-yellow-100 w-3 h-3 rounded-full"></span>
                     Pending ({pendingTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {pendingTasks.map(task => (
-                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <TaskCard task={task} onView={handleViewTask} />
+                      </div>
                     ))}
                     {pendingTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
@@ -164,14 +228,26 @@ export default function Tasks() {
                 </div>
                 
                 {/* In Progress Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'in_progress')}
+                  className="transition-colors duration-200 rounded-lg p-2"
+                >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
                     <span className="bg-blue-100 w-3 h-3 rounded-full"></span>
                     In Progress ({inProgressTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {inProgressTasks.map(task => (
-                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <TaskCard task={task} onView={handleViewTask} />
+                      </div>
                     ))}
                     {inProgressTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
@@ -182,14 +258,26 @@ export default function Tasks() {
                 </div>
                 
                 {/* Completed Column */}
-                <div>
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'completed')}
+                  className="transition-colors duration-200 rounded-lg p-2"
+                >
                   <h3 className="font-medium mb-2 flex items-center gap-1">
                     <span className="bg-green-100 w-3 h-3 rounded-full"></span>
                     Completed ({completedTasks.length})
                   </h3>
                   <div className="space-y-3">
                     {completedTasks.map(task => (
-                      <TaskCard key={task.id} task={task} onView={handleViewTask} />
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <TaskCard task={task} onView={handleViewTask} />
+                      </div>
                     ))}
                     {completedTasks.length === 0 && (
                       <div className="border border-dashed rounded-lg p-4 text-center text-muted-foreground text-sm">
