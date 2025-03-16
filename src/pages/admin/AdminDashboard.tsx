@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Users, UserPlus, FileText, BriefcaseBusiness, Calendar, CheckCircle2, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface DashboardStat {
   title: string;
@@ -24,55 +25,61 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // User count
+        // Get actual counts by retrieving all rows and counting them
         const { data: userData, error: userError } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true });
+          .select('*');
         
         if (userError) throw userError;
-        const userCount = userData?.length ?? 0;
+        console.log('Profiles data:', userData);
+        const userCount = userData?.length || 0;
         
         // Lead count
         const { data: leadData, error: leadError } = await supabase
           .from('leads')
-          .select('*', { count: 'exact', head: true });
+          .select('*');
         
         if (leadError) throw leadError;
-        const leadCount = leadData?.length ?? 0;
+        console.log('Leads data:', leadData);
+        const leadCount = leadData?.length || 0;
         
         // Opportunity count
         const { data: opportunityData, error: oppError } = await supabase
           .from('opportunities')
-          .select('*', { count: 'exact', head: true });
+          .select('*');
         
         if (oppError) throw oppError;
-        const opportunityCount = opportunityData?.length ?? 0;
+        console.log('Opportunities data:', opportunityData);
+        const opportunityCount = opportunityData?.length || 0;
         
         // Active task count
         const { data: activeTaskData, error: taskError } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .select('*')
           .eq('status', 'pending');
         
         if (taskError) throw taskError;
-        const activeTaskCount = activeTaskData?.length ?? 0;
+        console.log('Active tasks data:', activeTaskData);
+        const activeTaskCount = activeTaskData?.length || 0;
         
         // Completed task count
         const { data: completedTaskData, error: complTaskError } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .select('*')
           .eq('status', 'completed');
         
         if (complTaskError) throw complTaskError;
-        const completedTaskCount = completedTaskData?.length ?? 0;
+        console.log('Completed tasks data:', completedTaskData);
+        const completedTaskCount = completedTaskData?.length || 0;
         
         // Meeting count
         const { data: meetingData, error: meetingError } = await supabase
           .from('meetings')
-          .select('*', { count: 'exact', head: true });
+          .select('*');
         
         if (meetingError) throw meetingError;
-        const meetingCount = meetingData?.length ?? 0;
+        console.log('Meetings data:', meetingData);
+        const meetingCount = meetingData?.length || 0;
         
         // Get new user registrations last 7 days
         const lastWeek = new Date();
@@ -80,13 +87,14 @@ export default function AdminDashboard() {
         
         const { data: newUserData, error: newUserError } = await supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('*')
           .gte('created_at', lastWeek.toISOString());
         
         if (newUserError) throw newUserError;
-        const newUserCount = newUserData?.length ?? 0;
+        console.log('New users data:', newUserData);
+        const newUserCount = newUserData?.length || 0;
         
-        console.log('Stats fetched:', {
+        console.log('Stats calculated:', {
           userCount,
           newUserCount,
           leadCount,
@@ -149,6 +157,7 @@ export default function AdminDashboard() {
         ]);
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
+        toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
