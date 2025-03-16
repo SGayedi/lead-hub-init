@@ -26,107 +26,110 @@ export default function AdminDashboard() {
   const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        setLoading(true);
+  const mapStatsToUI = (statsData: StatData[]) => {
+    const mappedStats = statsData.map(stat => {
+      let icon = <FileText className="h-5 w-5" />;
+      let color = 'bg-gray-500';
+      
+      // Assign icons and colors based on stat name
+      switch(stat.name) {
+        case 'Total Users':
+          icon = <Users className="h-5 w-5" />;
+          color = 'bg-blue-500';
+          break;
+        case 'New Users (7d)':
+          icon = <UserPlus className="h-5 w-5" />;
+          color = 'bg-green-500';
+          break;
+        case 'Total Leads':
+          icon = <FileText className="h-5 w-5" />;
+          color = 'bg-purple-500';
+          break;
+        case 'Opportunities':
+          icon = <BriefcaseBusiness className="h-5 w-5" />;
+          color = 'bg-amber-500';
+          break;
+        case 'Meetings':
+          icon = <Calendar className="h-5 w-5" />;
+          color = 'bg-indigo-500';
+          break;
+        case 'Active Tasks':
+          icon = <Clock className="h-5 w-5" />;
+          color = 'bg-red-500';
+          break;
+        case 'Completed Tasks':
+          icon = <CheckCircle2 className="h-5 w-5" />;
+          color = 'bg-teal-500';
+          break;
+      }
+      
+      return {
+        title: stat.name,
+        value: stat.value,
+        description: stat.description,
+        icon,
+        color
+      };
+    });
+    
+    setStats(mappedStats);
+  };
+
+  const fetchDashboardStats = async () => {
+    setError(null);
+    try {
+      setLoading(true);
+      
+      // Fetch stats from our dedicated dashboard_stats table
+      const { data, error } = await supabase
+        .from('dashboard_stats')
+        .select('*');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        // If no stats are found, try to refresh them
+        const { error: refreshError } = await supabase
+          .rpc('refresh_dashboard_stats');
+          
+        if (refreshError) {
+          throw refreshError;
+        }
         
-        // Fetch stats from our dedicated dashboard_stats table
-        const { data, error } = await supabase
+        // Fetch stats again after refreshing
+        const { data: refreshedData, error: fetchError } = await supabase
           .from('dashboard_stats')
           .select('*');
-        
-        if (error) {
-          throw error;
+          
+        if (fetchError) {
+          throw fetchError;
         }
         
-        if (!data || data.length === 0) {
-          // If no stats are found, try to refresh them
-          const { error: refreshError } = await supabase
-            .rpc('refresh_dashboard_stats');
-            
-          if (refreshError) {
-            throw refreshError;
-          }
-          
-          // Fetch stats again after refreshing
-          const { data: refreshedData, error: fetchError } = await supabase
-            .from('dashboard_stats')
-            .select('*');
-            
-          if (fetchError) {
-            throw fetchError;
-          }
-          
-          if (refreshedData && refreshedData.length > 0) {
-            mapStatsToUI(refreshedData);
-          } else {
-            toast.error("No dashboard statistics found");
-          }
+        if (refreshedData && refreshedData.length > 0) {
+          mapStatsToUI(refreshedData);
         } else {
-          mapStatsToUI(data);
+          toast.error("No dashboard statistics found");
+          setError("No dashboard statistics found after refresh");
         }
-        
-        console.log('Dashboard stats fetched:', data);
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
+      } else {
+        mapStatsToUI(data);
       }
-    };
-    
-    // Function to map the stats data to UI format with icons
-    const mapStatsToUI = (statsData: StatData[]) => {
-      const mappedStats = statsData.map(stat => {
-        let icon = <FileText className="h-5 w-5" />;
-        let color = 'bg-gray-500';
-        
-        // Assign icons and colors based on stat name
-        switch(stat.name) {
-          case 'Total Users':
-            icon = <Users className="h-5 w-5" />;
-            color = 'bg-blue-500';
-            break;
-          case 'New Users (7d)':
-            icon = <UserPlus className="h-5 w-5" />;
-            color = 'bg-green-500';
-            break;
-          case 'Total Leads':
-            icon = <FileText className="h-5 w-5" />;
-            color = 'bg-purple-500';
-            break;
-          case 'Opportunities':
-            icon = <BriefcaseBusiness className="h-5 w-5" />;
-            color = 'bg-amber-500';
-            break;
-          case 'Meetings':
-            icon = <Calendar className="h-5 w-5" />;
-            color = 'bg-indigo-500';
-            break;
-          case 'Active Tasks':
-            icon = <Clock className="h-5 w-5" />;
-            color = 'bg-red-500';
-            break;
-          case 'Completed Tasks':
-            icon = <CheckCircle2 className="h-5 w-5" />;
-            color = 'bg-teal-500';
-            break;
-        }
-        
-        return {
-          title: stat.name,
-          value: stat.value,
-          description: stat.description,
-          icon,
-          color
-        };
-      });
       
-      setStats(mappedStats);
-    };
+      console.log('Dashboard stats fetched:', data);
+    } catch (error: any) {
+      console.error('Error fetching dashboard stats:', error);
+      toast.error('Failed to load dashboard data');
+      setError(error.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDashboardStats();
     
     // Set up interval to refresh stats every 5 minutes
@@ -141,6 +144,7 @@ export default function AdminDashboard() {
   const handleManualRefresh = async () => {
     try {
       setLoading(true);
+      setError(null);
       toast.info("Refreshing dashboard statistics...");
       
       // Call the refresh_dashboard_stats function
@@ -156,63 +160,20 @@ export default function AdminDashboard() {
       if (fetchError) throw fetchError;
       
       if (!data || data.length === 0) {
-        toast.error("No dashboard statistics found after refresh");
+        const errorMsg = "No dashboard statistics found after refresh";
+        toast.error(errorMsg);
+        setError(errorMsg);
         return;
       }
       
-      // Map the stats to UI components
-      const mappedStats = data.map(stat => {
-        let icon = <FileText className="h-5 w-5" />;
-        let color = 'bg-gray-500';
-        
-        // Assign icons and colors based on stat name
-        switch(stat.name) {
-          case 'Total Users':
-            icon = <Users className="h-5 w-5" />;
-            color = 'bg-blue-500';
-            break;
-          case 'New Users (7d)':
-            icon = <UserPlus className="h-5 w-5" />;
-            color = 'bg-green-500';
-            break;
-          case 'Total Leads':
-            icon = <FileText className="h-5 w-5" />;
-            color = 'bg-purple-500';
-            break;
-          case 'Opportunities':
-            icon = <BriefcaseBusiness className="h-5 w-5" />;
-            color = 'bg-amber-500';
-            break;
-          case 'Meetings':
-            icon = <Calendar className="h-5 w-5" />;
-            color = 'bg-indigo-500';
-            break;
-          case 'Active Tasks':
-            icon = <Clock className="h-5 w-5" />;
-            color = 'bg-red-500';
-            break;
-          case 'Completed Tasks':
-            icon = <CheckCircle2 className="h-5 w-5" />;
-            color = 'bg-teal-500';
-            break;
-        }
-        
-        return {
-          title: stat.name,
-          value: stat.value,
-          description: stat.description,
-          icon,
-          color
-        };
-      });
-      
-      setStats(mappedStats);
+      mapStatsToUI(data);
       toast.success("Dashboard statistics refreshed");
       
       console.log('Refreshed stats:', data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing stats:', error);
       toast.error('Failed to refresh dashboard statistics');
+      setError(error.message || 'Failed to refresh dashboard statistics');
     } finally {
       setLoading(false);
     }
@@ -235,6 +196,19 @@ export default function AdminDashboard() {
           {loading ? 'Refreshing...' : 'Refresh Stats'}
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+          <h3 className="font-medium">Error loading dashboard</h3>
+          <p>{error}</p>
+          <button 
+            onClick={fetchDashboardStats}
+            className="mt-2 text-sm underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loading
