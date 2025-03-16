@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,74 +24,61 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Get actual counts by retrieving all rows and counting them
-        const { data: userData, error: userError } = await supabase
+        // Get the raw counts using explicit count query
+        // User count
+        const { count: userCount, error: userError } = await supabase
           .from('profiles')
-          .select('*');
+          .select('*', { count: 'exact' });
         
         if (userError) throw userError;
-        console.log('Profiles data:', userData);
-        const userCount = userData?.length || 0;
         
         // Lead count
-        const { data: leadData, error: leadError } = await supabase
+        const { count: leadCount, error: leadError } = await supabase
           .from('leads')
-          .select('*');
+          .select('*', { count: 'exact' });
         
         if (leadError) throw leadError;
-        console.log('Leads data:', leadData);
-        const leadCount = leadData?.length || 0;
         
         // Opportunity count
-        const { data: opportunityData, error: oppError } = await supabase
+        const { count: opportunityCount, error: oppError } = await supabase
           .from('opportunities')
-          .select('*');
+          .select('*', { count: 'exact' });
         
         if (oppError) throw oppError;
-        console.log('Opportunities data:', opportunityData);
-        const opportunityCount = opportunityData?.length || 0;
         
         // Active task count
-        const { data: activeTaskData, error: taskError } = await supabase
+        const { count: activeTaskCount, error: taskError } = await supabase
           .from('tasks')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('status', 'pending');
         
         if (taskError) throw taskError;
-        console.log('Active tasks data:', activeTaskData);
-        const activeTaskCount = activeTaskData?.length || 0;
         
         // Completed task count
-        const { data: completedTaskData, error: complTaskError } = await supabase
+        const { count: completedTaskCount, error: complTaskError } = await supabase
           .from('tasks')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('status', 'completed');
         
         if (complTaskError) throw complTaskError;
-        console.log('Completed tasks data:', completedTaskData);
-        const completedTaskCount = completedTaskData?.length || 0;
         
         // Meeting count
-        const { data: meetingData, error: meetingError } = await supabase
+        const { count: meetingCount, error: meetingError } = await supabase
           .from('meetings')
-          .select('*');
+          .select('*', { count: 'exact' });
         
         if (meetingError) throw meetingError;
-        console.log('Meetings data:', meetingData);
-        const meetingCount = meetingData?.length || 0;
         
         // Get new user registrations last 7 days
         const lastWeek = new Date();
         lastWeek.setDate(lastWeek.getDate() - 7);
         
-        const { data: newUserData, error: newUserError } = await supabase
+        const { count: newUserCount, error: newUserError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('*', { count: 'exact' })
           .gte('created_at', lastWeek.toISOString());
         
         if (newUserError) throw newUserError;
-        console.log('New users data:', newUserData);
-        const newUserCount = newUserData?.length || 0;
         
         console.log('Stats calculated:', {
           userCount,
@@ -107,49 +93,49 @@ export default function AdminDashboard() {
         setStats([
           {
             title: 'Total Users',
-            value: userCount,
+            value: userCount || 0,
             description: 'Registered users in the system',
             icon: <Users className="h-5 w-5" />,
             color: 'bg-blue-500'
           },
           {
             title: 'New Users (7d)',
-            value: newUserCount,
+            value: newUserCount || 0,
             description: 'New registrations in last 7 days',
             icon: <UserPlus className="h-5 w-5" />,
             color: 'bg-green-500'
           },
           {
             title: 'Total Leads',
-            value: leadCount,
+            value: leadCount || 0,
             description: 'All leads in the system',
             icon: <FileText className="h-5 w-5" />,
             color: 'bg-purple-500'
           },
           {
             title: 'Opportunities',
-            value: opportunityCount,
+            value: opportunityCount || 0,
             description: 'Current opportunities',
             icon: <BriefcaseBusiness className="h-5 w-5" />,
             color: 'bg-amber-500'
           },
           {
             title: 'Meetings',
-            value: meetingCount,
+            value: meetingCount || 0,
             description: 'Scheduled meetings',
             icon: <Calendar className="h-5 w-5" />,
             color: 'bg-indigo-500'
           },
           {
             title: 'Active Tasks',
-            value: activeTaskCount,
+            value: activeTaskCount || 0,
             description: 'Tasks in progress',
             icon: <Clock className="h-5 w-5" />,
             color: 'bg-red-500'
           },
           {
             title: 'Completed Tasks',
-            value: completedTaskCount,
+            value: completedTaskCount || 0,
             description: 'Completed tasks',
             icon: <CheckCircle2 className="h-5 w-5" />,
             color: 'bg-teal-500'
@@ -164,7 +150,7 @@ export default function AdminDashboard() {
     };
 
     fetchDashboardStats();
-  }, []); // Empty dependency array means this runs once on component mount
+  }, []);
 
   return (
     <div className="space-y-6">
