@@ -82,7 +82,19 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      // Fetch stats from our dedicated dashboard_stats table
+      // First try to refresh the stats before fetching
+      console.log('Attempting to refresh dashboard stats...');
+      const { error: refreshError } = await supabase.rpc('refresh_dashboard_stats');
+      
+      if (refreshError) {
+        console.error('Error refreshing dashboard stats:', refreshError);
+        toast.error('Failed to refresh dashboard statistics');
+      } else {
+        console.log('Dashboard stats refreshed successfully');
+      }
+      
+      // Now fetch the stats
+      console.log('Fetching dashboard stats...');
       const { data, error } = await supabase
         .from('dashboard_stats')
         .select('*');
@@ -91,35 +103,14 @@ export default function AdminDashboard() {
         throw error;
       }
       
+      console.log('Dashboard stats fetched:', data);
+      
       if (!data || data.length === 0) {
-        // If no stats are found, try to refresh them
-        const { error: refreshError } = await supabase
-          .rpc('refresh_dashboard_stats');
-          
-        if (refreshError) {
-          throw refreshError;
-        }
-        
-        // Fetch stats again after refreshing
-        const { data: refreshedData, error: fetchError } = await supabase
-          .from('dashboard_stats')
-          .select('*');
-          
-        if (fetchError) {
-          throw fetchError;
-        }
-        
-        if (refreshedData && refreshedData.length > 0) {
-          mapStatsToUI(refreshedData);
-        } else {
-          toast.error("No dashboard statistics found");
-          setError("No dashboard statistics found after refresh");
-        }
-      } else {
-        mapStatsToUI(data);
+        throw new Error("No dashboard statistics found");
       }
       
-      console.log('Dashboard stats fetched:', data);
+      mapStatsToUI(data);
+      
     } catch (error: any) {
       console.error('Error fetching dashboard stats:', error);
       toast.error('Failed to load dashboard data');
@@ -130,10 +121,12 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    console.log('AdminDashboard component mounted');
     fetchDashboardStats();
     
     // Set up interval to refresh stats every 5 minutes
     const refreshInterval = setInterval(() => {
+      console.log('Auto-refreshing dashboard stats...');
       fetchDashboardStats();
     }, 5 * 60 * 1000);
     
@@ -142,41 +135,8 @@ export default function AdminDashboard() {
 
   // Add a manual refresh function
   const handleManualRefresh = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      toast.info("Refreshing dashboard statistics...");
-      
-      // Call the refresh_dashboard_stats function
-      const { error } = await supabase.rpc('refresh_dashboard_stats');
-      
-      if (error) throw error;
-      
-      // Fetch the refreshed stats
-      const { data, error: fetchError } = await supabase
-        .from('dashboard_stats')
-        .select('*');
-      
-      if (fetchError) throw fetchError;
-      
-      if (!data || data.length === 0) {
-        const errorMsg = "No dashboard statistics found after refresh";
-        toast.error(errorMsg);
-        setError(errorMsg);
-        return;
-      }
-      
-      mapStatsToUI(data);
-      toast.success("Dashboard statistics refreshed");
-      
-      console.log('Refreshed stats:', data);
-    } catch (error: any) {
-      console.error('Error refreshing stats:', error);
-      toast.error('Failed to refresh dashboard statistics');
-      setError(error.message || 'Failed to refresh dashboard statistics');
-    } finally {
-      setLoading(false);
-    }
+    console.log('Manual refresh initiated');
+    fetchDashboardStats();
   };
 
   return (
@@ -247,6 +207,7 @@ export default function AdminDashboard() {
             ))}
       </div>
 
+      {/* System Activity and Health cards */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
