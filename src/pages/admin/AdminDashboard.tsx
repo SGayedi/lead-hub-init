@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,13 @@ interface DashboardStat {
   color: string;
 }
 
+interface StatData {
+  name: string;
+  value: number;
+  description: string;
+  category: string;
+}
+
 export default function AdminDashboard() {
   const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStat[]>([]);
@@ -24,123 +32,43 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Get the raw counts using explicit count query
-        // User count
-        const { count: userCount, error: userError } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact' });
+        // Fetch stats from our dedicated dashboard_stats table
+        const { data, error } = await supabase
+          .from('dashboard_stats')
+          .select('*');
         
-        if (userError) throw userError;
+        if (error) {
+          throw error;
+        }
         
-        // Lead count
-        const { count: leadCount, error: leadError } = await supabase
-          .from('leads')
-          .select('*', { count: 'exact' });
-        
-        if (leadError) throw leadError;
-        
-        // Opportunity count
-        const { count: opportunityCount, error: oppError } = await supabase
-          .from('opportunities')
-          .select('*', { count: 'exact' });
-        
-        if (oppError) throw oppError;
-        
-        // Active task count
-        const { count: activeTaskCount, error: taskError } = await supabase
-          .from('tasks')
-          .select('*', { count: 'exact' })
-          .eq('status', 'pending');
-        
-        if (taskError) throw taskError;
-        
-        // Completed task count
-        const { count: completedTaskCount, error: complTaskError } = await supabase
-          .from('tasks')
-          .select('*', { count: 'exact' })
-          .eq('status', 'completed');
-        
-        if (complTaskError) throw complTaskError;
-        
-        // Meeting count
-        const { count: meetingCount, error: meetingError } = await supabase
-          .from('meetings')
-          .select('*', { count: 'exact' });
-        
-        if (meetingError) throw meetingError;
-        
-        // Get new user registrations last 7 days
-        const lastWeek = new Date();
-        lastWeek.setDate(lastWeek.getDate() - 7);
-        
-        const { count: newUserCount, error: newUserError } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact' })
-          .gte('created_at', lastWeek.toISOString());
-        
-        if (newUserError) throw newUserError;
-        
-        console.log('Stats calculated:', {
-          userCount,
-          newUserCount,
-          leadCount,
-          opportunityCount,
-          meetingCount,
-          activeTaskCount,
-          completedTaskCount
-        });
-        
-        setStats([
-          {
-            title: 'Total Users',
-            value: userCount || 0,
-            description: 'Registered users in the system',
-            icon: <Users className="h-5 w-5" />,
-            color: 'bg-blue-500'
-          },
-          {
-            title: 'New Users (7d)',
-            value: newUserCount || 0,
-            description: 'New registrations in last 7 days',
-            icon: <UserPlus className="h-5 w-5" />,
-            color: 'bg-green-500'
-          },
-          {
-            title: 'Total Leads',
-            value: leadCount || 0,
-            description: 'All leads in the system',
-            icon: <FileText className="h-5 w-5" />,
-            color: 'bg-purple-500'
-          },
-          {
-            title: 'Opportunities',
-            value: opportunityCount || 0,
-            description: 'Current opportunities',
-            icon: <BriefcaseBusiness className="h-5 w-5" />,
-            color: 'bg-amber-500'
-          },
-          {
-            title: 'Meetings',
-            value: meetingCount || 0,
-            description: 'Scheduled meetings',
-            icon: <Calendar className="h-5 w-5" />,
-            color: 'bg-indigo-500'
-          },
-          {
-            title: 'Active Tasks',
-            value: activeTaskCount || 0,
-            description: 'Tasks in progress',
-            icon: <Clock className="h-5 w-5" />,
-            color: 'bg-red-500'
-          },
-          {
-            title: 'Completed Tasks',
-            value: completedTaskCount || 0,
-            description: 'Completed tasks',
-            icon: <CheckCircle2 className="h-5 w-5" />,
-            color: 'bg-teal-500'
+        if (!data || data.length === 0) {
+          // If no stats are found, try to refresh them
+          const { error: refreshError } = await supabase
+            .rpc('refresh_dashboard_stats');
+            
+          if (refreshError) {
+            throw refreshError;
           }
-        ]);
+          
+          // Fetch stats again after refreshing
+          const { data: refreshedData, error: fetchError } = await supabase
+            .from('dashboard_stats')
+            .select('*');
+            
+          if (fetchError) {
+            throw fetchError;
+          }
+          
+          if (refreshedData && refreshedData.length > 0) {
+            mapStatsToUI(refreshedData);
+          } else {
+            toast.error("No dashboard statistics found");
+          }
+        } else {
+          mapStatsToUI(data);
+        }
+        
+        console.log('Dashboard stats fetched:', data);
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         toast.error('Failed to load dashboard data');
@@ -148,17 +76,164 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
+    
+    // Function to map the stats data to UI format with icons
+    const mapStatsToUI = (statsData: StatData[]) => {
+      const mappedStats = statsData.map(stat => {
+        let icon = <FileText className="h-5 w-5" />;
+        let color = 'bg-gray-500';
+        
+        // Assign icons and colors based on stat name
+        switch(stat.name) {
+          case 'Total Users':
+            icon = <Users className="h-5 w-5" />;
+            color = 'bg-blue-500';
+            break;
+          case 'New Users (7d)':
+            icon = <UserPlus className="h-5 w-5" />;
+            color = 'bg-green-500';
+            break;
+          case 'Total Leads':
+            icon = <FileText className="h-5 w-5" />;
+            color = 'bg-purple-500';
+            break;
+          case 'Opportunities':
+            icon = <BriefcaseBusiness className="h-5 w-5" />;
+            color = 'bg-amber-500';
+            break;
+          case 'Meetings':
+            icon = <Calendar className="h-5 w-5" />;
+            color = 'bg-indigo-500';
+            break;
+          case 'Active Tasks':
+            icon = <Clock className="h-5 w-5" />;
+            color = 'bg-red-500';
+            break;
+          case 'Completed Tasks':
+            icon = <CheckCircle2 className="h-5 w-5" />;
+            color = 'bg-teal-500';
+            break;
+        }
+        
+        return {
+          title: stat.name,
+          value: stat.value,
+          description: stat.description,
+          icon,
+          color
+        };
+      });
+      
+      setStats(mappedStats);
+    };
 
     fetchDashboardStats();
+    
+    // Set up interval to refresh stats every 5 minutes
+    const refreshInterval = setInterval(() => {
+      fetchDashboardStats();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
+
+  // Add a manual refresh function
+  const handleManualRefresh = async () => {
+    try {
+      setLoading(true);
+      toast.info("Refreshing dashboard statistics...");
+      
+      // Call the refresh_dashboard_stats function
+      const { error } = await supabase.rpc('refresh_dashboard_stats');
+      
+      if (error) throw error;
+      
+      // Fetch the refreshed stats
+      const { data, error: fetchError } = await supabase
+        .from('dashboard_stats')
+        .select('*');
+      
+      if (fetchError) throw fetchError;
+      
+      if (!data || data.length === 0) {
+        toast.error("No dashboard statistics found after refresh");
+        return;
+      }
+      
+      // Map the stats to UI components
+      const mappedStats = data.map(stat => {
+        let icon = <FileText className="h-5 w-5" />;
+        let color = 'bg-gray-500';
+        
+        // Assign icons and colors based on stat name
+        switch(stat.name) {
+          case 'Total Users':
+            icon = <Users className="h-5 w-5" />;
+            color = 'bg-blue-500';
+            break;
+          case 'New Users (7d)':
+            icon = <UserPlus className="h-5 w-5" />;
+            color = 'bg-green-500';
+            break;
+          case 'Total Leads':
+            icon = <FileText className="h-5 w-5" />;
+            color = 'bg-purple-500';
+            break;
+          case 'Opportunities':
+            icon = <BriefcaseBusiness className="h-5 w-5" />;
+            color = 'bg-amber-500';
+            break;
+          case 'Meetings':
+            icon = <Calendar className="h-5 w-5" />;
+            color = 'bg-indigo-500';
+            break;
+          case 'Active Tasks':
+            icon = <Clock className="h-5 w-5" />;
+            color = 'bg-red-500';
+            break;
+          case 'Completed Tasks':
+            icon = <CheckCircle2 className="h-5 w-5" />;
+            color = 'bg-teal-500';
+            break;
+        }
+        
+        return {
+          title: stat.name,
+          value: stat.value,
+          description: stat.description,
+          icon,
+          color
+        };
+      });
+      
+      setStats(mappedStats);
+      toast.success("Dashboard statistics refreshed");
+      
+      console.log('Refreshed stats:', data);
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+      toast.error('Failed to refresh dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Overview of your CRM system and key metrics
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of your CRM system and key metrics
+          </p>
+        </div>
+        <button
+          onClick={handleManualRefresh}
+          disabled={loading}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+        >
+          {loading ? 'Refreshing...' : 'Refresh Stats'}
+        </button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -248,6 +323,10 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Authentication</span>
                   <span className="text-sm font-medium text-green-500">Operational</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Last Stats Refresh</span>
+                  <span className="text-sm font-medium text-green-500">{new Date().toLocaleTimeString()}</span>
                 </div>
               </div>
             )}

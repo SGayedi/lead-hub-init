@@ -242,6 +242,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_stats: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -1068,6 +1098,10 @@ export type Database = {
       is_senior_management: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      refresh_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       release_record_lock: {
         Args: {
