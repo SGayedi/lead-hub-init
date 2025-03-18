@@ -96,7 +96,7 @@ export async function disconnectOutlookAccount(accountType: string = 'personal')
 }
 
 // Initiate Microsoft OAuth flow
-export async function initiateOutlookAuthorization(accountType: string = 'personal', callbackUrl?: string) {
+export async function initiateOutlookAuthorization(accountType: 'personal' | 'organizational' = 'personal', callbackUrl?: string) {
   try {
     console.log(`Starting Microsoft OAuth flow for ${accountType} account...`);
     
