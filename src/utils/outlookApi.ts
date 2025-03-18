@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Check if Outlook configuration is complete
@@ -24,7 +23,7 @@ export async function checkOutlookSetup() {
 }
 
 // Call the Edge Function to sync emails
-export async function syncOutlookEmails(accountType: string = 'personal') {
+export async function syncOutlookEmails(accountType: 'personal' | 'organizational' = 'personal') {
   try {
     const { data, error } = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
@@ -79,7 +78,7 @@ export async function listOutlookAccounts() {
 }
 
 // Disconnect a specific account
-export async function disconnectOutlookAccount(accountType: string = 'personal') {
+export async function disconnectOutlookAccount(accountType: 'personal' | 'organizational' = 'personal') {
   try {
     const { error } = await supabase.rpc('disconnect_outlook', { account_type_param: accountType });
     
