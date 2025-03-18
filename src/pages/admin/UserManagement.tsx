@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -29,7 +30,7 @@ import {
 import { toast } from "sonner";
 import { 
   Search, Plus, UserRoundCog, UserRoundX, 
-  UserRoundCheck, Loader2, Shield 
+  UserRoundCheck, Loader2, Shield, Trash2 
 } from "lucide-react";
 import { Role } from "@/types/crm";
 import { format } from "date-fns";
@@ -73,6 +74,11 @@ export default function UserManagement() {
   const [userToDisable, setUserToDisable] = useState<User | null>(null);
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
+  
+  // Delete user state
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -262,6 +268,39 @@ export default function UserManagement() {
       toast.error(error.message || 'Failed to disable user');
     } finally {
       setIsDisabling(false);
+    }
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // First, delete the user from auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(
+        userToDelete.id
+      );
+      
+      if (authError) throw authError;
+      
+      // The profile will be automatically deleted due to on delete cascade
+      
+      toast.success('User has been permanently deleted');
+      setDeleteDialogOpen(false);
+      
+      // Update local state to remove the user
+      setUsers(users.filter(user => user.id !== userToDelete.id));
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.message || 'Failed to delete user');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -478,6 +517,35 @@ export default function UserManagement() {
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Delete User Alert Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this user?
+              This action is irreversible and will remove all user data from the system.
+              <div className="mt-2 p-3 bg-muted rounded-md">
+                <p><strong>Email:</strong> {userToDelete?.email}</p>
+                <p><strong>Name:</strong> {userToDelete?.full_name || 'Unnamed User'}</p>
+                <p><strong>Role:</strong> {userToDelete ? getRoleDisplayName(userToDelete.role) : ''}</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete User Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -514,7 +582,7 @@ export default function UserManagement() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Created At</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -550,7 +618,7 @@ export default function UserManagement() {
                         {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1">
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -567,6 +635,15 @@ export default function UserManagement() {
                             disabled={user.is_active === false}
                           >
                             <UserRoundX className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Delete User Permanently"
+                            onClick={() => handleDeleteClick(user)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
