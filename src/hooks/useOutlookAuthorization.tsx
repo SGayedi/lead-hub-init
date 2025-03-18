@@ -9,6 +9,7 @@ export function useOutlookAuthorization() {
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [redirectInfo, setRedirectInfo] = useState<{isHttps: boolean, redirectUri: string} | null>(null);
   const [accountType, setAccountType] = useState<OutlookAccountType>('personal');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export function useOutlookAuthorization() {
     setIsLoading(true);
     setConfigError(null);
     setAuthError(null);
+    setRedirectInfo(null);
     setAccountType(type);
     
     try {
@@ -56,17 +58,22 @@ export function useOutlookAuthorization() {
       console.log(`Configuration is valid, proceeding to authorization for ${type} account...`);
       
       // Check if this account type is already connected
-      const accounts = await listOutlookAccounts();
-      const isAlreadyConnected = accounts.some(acc => acc.account_type === type);
-      
-      if (isAlreadyConnected) {
-        toast({
-          title: "Account Already Connected",
-          description: `Your ${type} Outlook account is already connected.`,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      try {
+        const accounts = await listOutlookAccounts();
+        const isAlreadyConnected = accounts.some(acc => acc.account_type === type);
+        
+        if (isAlreadyConnected) {
+          toast({
+            title: "Account Already Connected",
+            description: `Your ${type} Outlook account is already connected.`,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.log("Could not check connected accounts, might be first connection:", err);
+        // Continue with the auth flow even if we can't check accounts
       }
       
       // Get the current URL for building the redirect
@@ -75,10 +82,28 @@ export function useOutlookAuthorization() {
       const callbackUrl = `${baseUrl}/inbox`;
       
       // Get the authorization URL with the account type
-      const url = await initiateOutlookAuthorization(type, callbackUrl);
+      const response = await initiateOutlookAuthorization(type, callbackUrl);
       
-      // Set the auth URL to be used by the UI
-      setAuthUrl(url);
+      // Check if this is a URL or an object with additional info
+      if (typeof response === 'string') {
+        // Set the auth URL to be used by the UI
+        setAuthUrl(response);
+      } else if (typeof response === 'object' && response.url) {
+        setAuthUrl(response.url);
+        setRedirectInfo({
+          isHttps: response.isHttps,
+          redirectUri: response.redirectUri
+        });
+        
+        // If not HTTPS, show a specific error about the URL protocol
+        if (response.isHttps === false) {
+          setAuthError(
+            "Microsoft requires HTTPS for authentication. " +
+            "Your application is running on HTTP, which won't work with Microsoft OAuth. " +
+            "Please deploy your application with HTTPS or use a service like ngrok for local testing."
+          );
+        }
+      }
       
       toast({
         title: "Authentication Ready",
@@ -89,7 +114,10 @@ export function useOutlookAuthorization() {
       console.error('Error authorizing with Outlook:', err);
       const errorMsg = err.message || 'Failed to connect to Outlook';
       setConfigError(errorMsg);
-      setAuthError("Authentication failed. Please ensure your Microsoft account allows authentication from this domain.");
+      setAuthError(
+        "Authentication failed. Please ensure your Microsoft account allows authentication from this domain. " +
+        "This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application."
+      );
       toast({
         title: "Authorization Failed",
         description: errorMsg,
@@ -103,6 +131,7 @@ export function useOutlookAuthorization() {
   const resetAuthUrl = () => {
     setAuthUrl(null);
     setAuthError(null);
+    setRedirectInfo(null);
   };
 
   return {
@@ -110,6 +139,7 @@ export function useOutlookAuthorization() {
     configError,
     authUrl,
     authError,
+    redirectInfo,
     accountType,
     authorizeOutlook,
     resetAuthUrl

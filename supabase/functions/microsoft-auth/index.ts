@@ -17,16 +17,25 @@ let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 
 // Set a default fallback redirect URI based on the request URL if not provided
 const getRedirectUri = (req, callbackUrl) => {
+  // If a specific callback URL is provided through the API, use it first
   if (callbackUrl) return callbackUrl;
+  
+  // If a specific REDIRECT_URI is configured in environment variables, use it second
   if (REDIRECT_URI) return REDIRECT_URI;
   
   try {
-    // Try to extract the origin from the request
+    // Try to extract the origin from the request as a last resort
     const url = new URL(req.url);
-    return `${url.origin}/inbox`;
+    const baseUrl = `${url.origin}`;
+    
+    // Log the auto-detected URL for debugging
+    console.log(`Auto-detected base URL: ${baseUrl}`);
+    
+    // Return a path based on the current domain
+    return `${baseUrl}/inbox`;
   } catch (e) {
     console.error("Could not extract origin from request URL:", e);
-    return "http://localhost:3000/inbox"; // Fallback
+    return "https://your-domain.com/inbox"; // Default fallback - instruct users to update this
   }
 };
 
@@ -145,6 +154,10 @@ serve(async (req) => {
           const redirectUri = getRedirectUri(req, callbackUrl);
           console.log('Using redirect URI:', redirectUri);
           
+          // Log whether this is HTTP or HTTPS for debugging purposes
+          const isHttps = redirectUri.startsWith('https://');
+          console.log(`Redirect URI protocol: ${isHttps ? 'HTTPS' : 'HTTP'} (Microsoft requires HTTPS)`);
+          
           // Ensure the redirect URI is properly encoded
           const encodedRedirectUri = encodeURIComponent(redirectUri);
           
@@ -154,7 +167,11 @@ serve(async (req) => {
           console.log('Generated auth URL:', authUrl);
           
           return new Response(
-            JSON.stringify({ url: authUrl }),
+            JSON.stringify({ 
+              url: authUrl,
+              isHttps: isHttps,
+              redirectUri: redirectUri 
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         } catch (error) {

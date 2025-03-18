@@ -132,6 +132,10 @@ export async function initiateOutlookAuthorization(accountType: OutlookAccountTy
     
     if (data.url) {
       console.log('Redirecting to OAuth URL:', data.url);
+      // Return the URL or additional info from the edge function
+      if (data.isHttps !== undefined || data.redirectUri) {
+        return data;
+      }
       return data.url;
     } else {
       throw new Error('No authorization URL returned');

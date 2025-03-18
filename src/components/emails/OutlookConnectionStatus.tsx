@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from "react";
-import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase } from "lucide-react";
+import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase, Shield, Link } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +19,7 @@ interface OutlookConnectionStatusProps {
   authError?: string | null;
   accountType: 'personal' | 'organizational';
   connectedAccounts?: Array<{account_type: string}>;
+  redirectInfo?: {isHttps: boolean, redirectUri: string} | null;
 }
 
 export function OutlookConnectionStatus({ 
@@ -28,7 +30,8 @@ export function OutlookConnectionStatus({
   resetAuthUrl,
   authError,
   accountType,
-  connectedAccounts = []
+  connectedAccounts = [],
+  redirectInfo
 }: OutlookConnectionStatusProps) {
   const isMobile = useIsMobile();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
@@ -73,8 +76,17 @@ export function OutlookConnectionStatus({
   };
 
   const showAccountTypeSelector = () => {
-    const hasPersonal = connectedAccounts.some(acc => acc.account_type === 'personal');
-    const hasOrganizational = connectedAccounts.some(acc => acc.account_type === 'organizational');
+    // Try to determine which accounts are already connected
+    let hasPersonal, hasOrganizational;
+    
+    try {
+      hasPersonal = connectedAccounts.some(acc => acc.account_type === 'personal');
+      hasOrganizational = connectedAccounts.some(acc => acc.account_type === 'organizational');
+    } catch (err) {
+      // If we can't determine accounts, assume none are connected
+      hasPersonal = false;
+      hasOrganizational = false;
+    }
     
     if (hasPersonal && hasOrganizational) {
       toast({
@@ -165,16 +177,48 @@ export function OutlookConnectionStatus({
           <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <SheetContent side="bottom" className="h-[85vh] p-4">
               {authError ? (
-                <div className="p-4">
+                <div className="p-4 space-y-6">
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       {authError}
-                      <p className="mt-2 text-sm">
-                        This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
-                      </p>
                     </AlertDescription>
                   </Alert>
+                  
+                  {/* Additional guidance if we have redirect info */}
+                  {redirectInfo && (
+                    <div className="space-y-4">
+                      <Alert>
+                        <Shield className="h-4 w-4" />
+                        <AlertTitle>Authentication Requirements</AlertTitle>
+                        <AlertDescription>
+                          <div className="mt-2 space-y-2">
+                            <p>
+                              <strong>Current redirect URL:</strong> {redirectInfo.redirectUri}
+                            </p>
+                            <p>
+                              <strong>Protocol:</strong> {redirectInfo.isHttps ? 'HTTPS ✓' : 'HTTP ✗'}
+                            </p>
+                            
+                            {!redirectInfo.isHttps && (
+                              <p className="text-red-500">
+                                Microsoft requires HTTPS for authentication. Your application is currently using HTTP.
+                              </p>
+                            )}
+                            
+                            <div className="mt-4">
+                              <p className="font-semibold">How to fix this:</p>
+                              <ol className="list-decimal list-inside mt-2 space-y-1">
+                                <li>Make sure your application is served over HTTPS</li>
+                                <li>Register your exact redirect URL in your Microsoft application</li>
+                                <li>Wait until your HTTPS certificates are fully propagated</li>
+                              </ol>
+                            </div>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center">
@@ -196,19 +240,55 @@ export function OutlookConnectionStatus({
           <Dialog open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <DialogContent className="sm:max-w-[425px]">
               {authError ? (
-                <div className="p-6">
+                <div className="p-6 space-y-6">
                   <DialogHeader>
                     <DialogTitle>Authentication Error</DialogTitle>
                   </DialogHeader>
-                  <Alert variant="destructive" className="mt-4">
+                  
+                  <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       {authError}
-                      <p className="mt-2">
-                        This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
-                      </p>
                     </AlertDescription>
                   </Alert>
+                  
+                  {/* Additional guidance if we have redirect info */}
+                  {redirectInfo && (
+                    <Alert>
+                      <Shield className="h-4 w-4" />
+                      <AlertTitle>Authentication Requirements</AlertTitle>
+                      <AlertDescription>
+                        <div className="mt-2 space-y-2">
+                          <p>
+                            <strong>Current redirect URL:</strong> {redirectInfo.redirectUri}
+                          </p>
+                          <p>
+                            <strong>Protocol:</strong> {redirectInfo.isHttps ? 'HTTPS ✓' : 'HTTP ✗'}
+                          </p>
+                          
+                          {!redirectInfo.isHttps && (
+                            <p className="text-red-500">
+                              Microsoft requires HTTPS for authentication. Your application is currently using HTTP.
+                            </p>
+                          )}
+                          
+                          <div className="mt-4">
+                            <p className="font-semibold">How to fix this:</p>
+                            <ol className="list-decimal list-inside mt-2 space-y-1">
+                              <li>Make sure your application is served over HTTPS</li>
+                              <li>Register the exact redirect URL in the Microsoft Azure portal</li>
+                              <li>
+                                <p>The URL to register is:</p>
+                                <p className="bg-muted p-2 mt-1 rounded text-sm break-all">
+                                  {redirectInfo.redirectUri}
+                                </p>
+                              </li>
+                            </ol>
+                          </div>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-4">
