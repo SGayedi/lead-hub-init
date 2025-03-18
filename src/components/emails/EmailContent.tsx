@@ -47,6 +47,8 @@ export function EmailContent({
         authUrl={authUrl}
         resetAuthUrl={resetAuthUrl}
         authError={authError}
+        accountType="personal"
+        connectedAccounts={[]}
       />
     );
   }

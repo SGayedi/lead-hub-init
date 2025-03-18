@@ -1,10 +1,10 @@
-
 import React from "react";
 import { RefreshCw, LogIn, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mail, Briefcase } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailToolbarProps {
   syncEmails: (accountType?: string) => void;
@@ -27,6 +27,7 @@ export function EmailToolbar({
 }: EmailToolbarProps) {
   const [showAccountPicker, setShowAccountPicker] = React.useState(false);
   const [syncAccountType, setSyncAccountType] = React.useState<string | null>(null);
+  const { toast } = useToast();
   
   const handleSyncEmails = () => {
     // If only one account is connected, sync that one directly

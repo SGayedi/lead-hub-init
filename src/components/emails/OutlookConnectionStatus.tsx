@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface OutlookConnectionStatusProps {
   isOutlookConnected: boolean | null;
@@ -33,16 +33,14 @@ export function OutlookConnectionStatus({
   const isMobile = useIsMobile();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
+  const { toast } = useToast();
   
-  // Handle the OAuth authentication opening in a new window
   useEffect(() => {
     let authWindow: Window | null = null;
     
     if (authUrl) {
-      // Open the auth URL in a new window
       authWindow = window.open(authUrl, 'microsoft-auth', 'width=800,height=600');
       
-      // Set up a listener to detect when the window is closed
       const checkClosed = setInterval(() => {
         if (authWindow && authWindow.closed) {
           clearInterval(checkClosed);
@@ -50,10 +48,8 @@ export function OutlookConnectionStatus({
         }
       }, 500);
       
-      // Show the auth prompt dialog
       setShowAuthPrompt(true);
       
-      // Clean up function
       return () => {
         clearInterval(checkClosed);
         if (authWindow && !authWindow.closed) {
@@ -77,11 +73,9 @@ export function OutlookConnectionStatus({
   };
 
   const showAccountTypeSelector = () => {
-    // Check which account types are already connected
     const hasPersonal = connectedAccounts.some(acc => acc.account_type === 'personal');
     const hasOrganizational = connectedAccounts.some(acc => acc.account_type === 'organizational');
     
-    // If both are connected, show a message
     if (hasPersonal && hasOrganizational) {
       toast({
         title: "All Account Types Connected",
@@ -90,7 +84,6 @@ export function OutlookConnectionStatus({
       return;
     }
     
-    // If only one is connected, connect the other one directly
     if (hasPersonal && !hasOrganizational) {
       authorizeOutlook('organizational');
       return;
@@ -101,7 +94,6 @@ export function OutlookConnectionStatus({
       return;
     }
     
-    // If none are connected, show the picker
     setShowAccountPicker(true);
   };
 
@@ -138,7 +130,6 @@ export function OutlookConnectionStatus({
           </CardContent>
         </Card>
 
-        {/* Account Type Picker Dialog */}
         <Dialog open={showAccountPicker} onOpenChange={setShowAccountPicker}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -170,7 +161,6 @@ export function OutlookConnectionStatus({
           </DialogContent>
         </Dialog>
 
-        {/* Authentication Prompt Dialog/Sheet */}
         {isMobile ? (
           <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <SheetContent side="bottom" className="h-[85vh] p-4">
