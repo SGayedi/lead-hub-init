@@ -10,7 +10,7 @@ export function useOutlookSync() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const syncEmails = async (accountType: string = 'personal') => {
+  const syncEmails = async (accountType: 'personal' | 'organizational' = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication Required",

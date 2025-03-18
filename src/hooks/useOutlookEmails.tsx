@@ -38,7 +38,7 @@ export function useOutlookEmails() {
   }, []);
   
   // Function to disconnect a specific account
-  const disconnectAccount = async (accountType: string) => {
+  const disconnectAccount = async (accountType: 'personal' | 'organizational') => {
     try {
       await disconnectOutlookAccount(accountType);
       // Update the connected accounts list
