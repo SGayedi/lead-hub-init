@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -41,7 +40,8 @@ interface User {
   full_name: string | null;
   role: Role | string; // Allow string to handle DB values that may not match our enum
   created_at: string;
-  is_active?: boolean;
+  updated_at: string;
+  is_active: boolean;
 }
 
 export default function UserManagement() {
@@ -92,14 +92,7 @@ export default function UserManagement() {
       
       if (error) throw error;
       
-      // Transform the data to ensure role compatibility
-      const transformedData: User[] = (data || []).map(item => ({
-        ...item,
-        role: item.role as Role,
-        is_active: item.is_active !== false // Default to true if not set
-      }));
-      
-      setUsers(transformedData);
+      setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
