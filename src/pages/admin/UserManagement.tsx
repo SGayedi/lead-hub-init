@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -16,6 +17,16 @@ import {
 import { 
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { 
   Search, Plus, UserRoundCog, UserRoundX, 
@@ -30,6 +41,7 @@ interface User {
   full_name: string | null;
   role: Role | string; // Allow string to handle DB values that may not match our enum
   created_at: string;
+  is_active?: boolean;
 }
 
 export default function UserManagement() {
@@ -48,6 +60,19 @@ export default function UserManagement() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Edit user state
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    role: "" as Role | string
+  });
+  
+  // Disable user state
+  const [userToDisable, setUserToDisable] = useState<User | null>(null);
+  const [disableDialogOpen, setDisableDialogOpen] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -70,7 +95,8 @@ export default function UserManagement() {
       // Transform the data to ensure role compatibility
       const transformedData: User[] = (data || []).map(item => ({
         ...item,
-        role: item.role as Role
+        role: item.role as Role,
+        is_active: item.is_active !== false // Default to true if not set
       }));
       
       setUsers(transformedData);
@@ -157,6 +183,92 @@ export default function UserManagement() {
       toast.error(error.message || 'Failed to create user');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (user: User) => {
+    setEditUser(user);
+    setEditFormData({
+      fullName: user.full_name || '',
+      role: user.role
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditFormData({
+      ...editFormData,
+      [e.target.name === 'fullName' ? 'fullName' : e.target.name]: e.target.value,
+    });
+  };
+
+  const handleEditRoleChange = (value: string) => {
+    setEditFormData({
+      ...editFormData,
+      role: value as Role,
+    });
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Update the profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editFormData.fullName,
+          role: editFormData.role
+        })
+        .eq('id', editUser.id);
+      
+      if (error) throw error;
+      
+      toast.success('User updated successfully');
+      setEditDialogOpen(false);
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast.error(error.message || 'Failed to update user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDisableClick = (user: User) => {
+    setUserToDisable(user);
+    setDisableDialogOpen(true);
+  };
+
+  const handleDisableUser = async () => {
+    if (!userToDisable) return;
+    
+    try {
+      setIsDisabling(true);
+      
+      // Disable the user by updating the is_active flag
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: false })
+        .eq('id', userToDisable.id);
+      
+      if (error) throw error;
+      
+      toast.success('User has been disabled');
+      setDisableDialogOpen(false);
+      
+      // Update local state to reflect the change
+      setUsers(users.map(user => 
+        user.id === userToDisable.id ? { ...user, is_active: false } : user
+      ));
+    } catch (error: any) {
+      console.error('Error disabling user:', error);
+      toast.error(error.message || 'Failed to disable user');
+    } finally {
+      setIsDisabling(false);
     }
   };
 
@@ -274,6 +386,105 @@ export default function UserManagement() {
         </Dialog>
       </div>
       
+      {/* Edit User Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and role
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleUpdateUser}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  value={editUser?.email || ''}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-sm text-muted-foreground">Email cannot be changed</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  required
+                  value={editFormData.fullName}
+                  onChange={handleEditInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={editFormData.role as string}
+                  onValueChange={handleEditRoleChange}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="investor_services">Investor Services</SelectItem>
+                    <SelectItem value="legal_services">Legal Services</SelectItem>
+                    <SelectItem value="property_development">Property Development</SelectItem>
+                    <SelectItem value="senior_management">Senior Management</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Update User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Disable User Alert Dialog */}
+      <AlertDialog open={disableDialogOpen} onOpenChange={setDisableDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disable User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to disable this user? 
+              They will no longer be able to access the system.
+              <div className="mt-2 p-3 bg-muted rounded-md">
+                <p><strong>Email:</strong> {userToDisable?.email}</p>
+                <p><strong>Name:</strong> {userToDisable?.full_name || 'Unnamed User'}</p>
+                <p><strong>Role:</strong> {userToDisable ? getRoleDisplayName(userToDisable.role) : ''}</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDisableUser}
+              disabled={isDisabling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDisabling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Disable User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -324,11 +535,14 @@ export default function UserManagement() {
                   ))
                 ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={user.is_active === false ? "opacity-50" : ""}>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">{user.full_name || 'Unnamed User'}</span>
                           <span className="text-sm text-muted-foreground">{user.email}</span>
+                          {user.is_active === false && (
+                            <span className="text-xs text-destructive">Disabled</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -344,10 +558,21 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" title="Edit User">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Edit User"
+                            onClick={() => handleEditClick(user)}
+                          >
                             <UserRoundCog className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" title="Disable User">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title={user.is_active === false ? "User already disabled" : "Disable User"}
+                            onClick={() => handleDisableClick(user)}
+                            disabled={user.is_active === false}
+                          >
                             <UserRoundX className="h-4 w-4" />
                           </Button>
                         </div>
