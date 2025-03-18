@@ -14,6 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body to get account type
+    const requestData = await req.json();
+    const accountType = requestData.accountType || 'personal';
+    
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -47,18 +51,19 @@ serve(async (req) => {
       );
     }
 
-    // Delete the user's outlook token
+    // Delete the user's outlook token with specific account type
     const { error } = await supabaseClient
       .from("outlook_tokens")
       .delete()
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("account_type", accountType);
     
     if (error) {
       throw error;
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, accountType }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
