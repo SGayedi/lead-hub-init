@@ -84,7 +84,10 @@ export async function listOutlookAccounts() {
 // Disconnect a specific account
 export async function disconnectOutlookAccount(accountType: OutlookAccountType = 'personal') {
   try {
-    const { error } = await supabase.rpc('disconnect_outlook', { account_type_param: accountType });
+    // Pass the account_type_param as the exact string, not a variable type
+    const { error } = await supabase.rpc('disconnect_outlook', { 
+      account_type_param: accountType 
+    });
     
     if (error) {
       console.error('Error disconnecting account:', error);
