@@ -24,11 +24,11 @@ export async function checkOutlookSetup() {
 }
 
 // Call the Edge Function to sync emails
-export async function syncOutlookEmails() {
+export async function syncOutlookEmails(accountType: string = 'personal') {
   try {
     const { data, error } = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
-      body: { path: 'sync-emails' },
+      body: { path: 'sync-emails', accountType },
     });
     
     if (error) {
@@ -58,17 +58,55 @@ export async function fetchOutlookEmails(filter?: string) {
   }
 }
 
-// Initiate Microsoft OAuth flow
-export async function initiateOutlookAuthorization(callbackUrl?: string) {
+// List connected accounts
+export async function listOutlookAccounts() {
   try {
-    console.log('Starting Microsoft OAuth flow...');
+    const { data, error } = await supabase.functions.invoke('microsoft-auth', {
+      method: 'POST',
+      body: { path: 'list-accounts' },
+    });
+    
+    if (error) {
+      console.error('Error listing accounts:', error);
+      throw new Error(`Failed to list accounts: ${error.message || 'Unknown error'}`);
+    }
+    
+    return data?.accounts || [];
+  } catch (err: any) {
+    console.error('Error listing accounts:', err);
+    throw err;
+  }
+}
+
+// Disconnect a specific account
+export async function disconnectOutlookAccount(accountType: string = 'personal') {
+  try {
+    const { error } = await supabase.rpc('disconnect_outlook', { account_type_param: accountType });
+    
+    if (error) {
+      console.error('Error disconnecting account:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (err: any) {
+    console.error('Error disconnecting account:', err);
+    throw err;
+  }
+}
+
+// Initiate Microsoft OAuth flow
+export async function initiateOutlookAuthorization(accountType: string = 'personal', callbackUrl?: string) {
+  try {
+    console.log(`Starting Microsoft OAuth flow for ${accountType} account...`);
     
     // Call the authorization endpoint to get the OAuth URL
     const authResponse = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
       body: { 
         path: 'authorize',
-        callbackUrl
+        callbackUrl,
+        accountType
       },
     });
     

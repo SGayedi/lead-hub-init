@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -37,6 +38,13 @@ console.log(`REDIRECT_URI present: ${!!REDIRECT_URI} ${REDIRECT_URI ? `(${REDIRE
 console.log(`SUPABASE_URL present: ${!!SUPABASE_URL}`);
 console.log(`SUPABASE_ANON_KEY present: ${!!SUPABASE_ANON_KEY}`);
 
+// Function to get the Microsoft OAuth endpoint based on account type
+const getMicrosoftOAuthEndpoint = (accountType = 'personal') => {
+  // For personal accounts, use 'consumers'
+  // For organizational accounts, use 'common' or a specific tenant ID
+  return accountType === 'personal' ? 'consumers' : 'common';
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -50,9 +58,10 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const body = await req.json();
-    const { path, callbackUrl } = body;
+    const { path, callbackUrl, accountType = 'personal' } = body;
     
     console.log(`Processing path: ${path}`);
+    console.log(`Account type: ${accountType}`);
     if (callbackUrl) {
       console.log(`Using provided callback URL: ${callbackUrl}`);
     }
@@ -122,6 +131,9 @@ serve(async (req) => {
       );
     }
 
+    // Get the Microsoft endpoint based on account type
+    const msEndpoint = getMicrosoftOAuthEndpoint(accountType);
+
     switch (path) {
       case 'authorize': {
         console.log('Handling authorize request');
@@ -136,9 +148,8 @@ serve(async (req) => {
           // Ensure the redirect URI is properly encoded
           const encodedRedirectUri = encodeURIComponent(redirectUri);
           
-          // Generate the auth URL, now using a direct link approach instead of relying on iframe
-          // This is more reliable for OAuth flows that may have X-Frame-Options restrictions
-          const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}`;
+          // Generate the auth URL, now using the endpoint based on account type
+          const authUrl = `https://login.microsoftonline.com/${msEndpoint}/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}:${accountType}`;
           
           console.log('Generated auth URL:', authUrl);
           
@@ -166,8 +177,21 @@ serve(async (req) => {
           );
         }
 
+        // Extract user ID and account type from state
+        const [userId, acctType = 'personal'] = (state || '').split(':');
+        
+        if (userId !== user.id) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid state parameter' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Use the endpoint for the appropriate account type
+        const callbackEndpoint = getMicrosoftOAuthEndpoint(acctType);
+        
         // Exchange code for token
-        const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+        const tokenUrl = `https://login.microsoftonline.com/${callbackEndpoint}/oauth2/v2.0/token`;
         
         // Get the appropriate redirect URI
         const redirectUri = getRedirectUri(req, callbackUrl);
@@ -204,6 +228,7 @@ serve(async (req) => {
           .from('outlook_tokens')
           .upsert({
             user_id: user.id,
+            account_type: acctType,
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
             expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
@@ -218,31 +243,37 @@ serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ success: true }),
+          JSON.stringify({ success: true, accountType: acctType }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       case 'sync-emails': {
         console.log('Handling sync-emails request');
-        // Get Microsoft token
+        const { accountType = 'personal' } = body;
+        
+        // Get Microsoft token for the specified account type
         const { data: tokenData, error: tokenError } = await supabase
           .from('outlook_tokens')
           .select('access_token, refresh_token, expires_at')
           .eq('user_id', user.id)
+          .eq('account_type', accountType)
           .single();
 
         if (tokenError || !tokenData) {
           return new Response(
-            JSON.stringify({ error: 'No Microsoft token found', details: tokenError }),
+            JSON.stringify({ error: `No Microsoft token found for ${accountType} account`, details: tokenError }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
+        // Get the endpoint for the appropriate account type
+        const syncEndpoint = getMicrosoftOAuthEndpoint(accountType);
+
         // Check if token needs refresh
         if (new Date(tokenData.expires_at) < new Date()) {
-          // Refresh token
-          const refreshResponse = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+          // Refresh token using the appropriate endpoint
+          const refreshResponse = await fetch(`https://login.microsoftonline.com/${syncEndpoint}/oauth2/v2.0/token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
@@ -272,7 +303,8 @@ serve(async (req) => {
               refresh_token: refreshData.refresh_token || tokenData.refresh_token,
               expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
             })
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('account_type', accountType);
 
           tokenData.access_token = refreshData.access_token;
         }
@@ -323,7 +355,29 @@ serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ success: true, count: emails.length }),
+          JSON.stringify({ success: true, count: emails.length, accountType }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'list-accounts': {
+        console.log('Handling list-accounts request');
+        
+        // Get all connected accounts for the user
+        const { data: accounts, error: accountsError } = await supabase
+          .from('outlook_tokens')
+          .select('account_type, expires_at')
+          .eq('user_id', user.id);
+        
+        if (accountsError) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to retrieve accounts', details: accountsError }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ accounts: accounts || [] }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

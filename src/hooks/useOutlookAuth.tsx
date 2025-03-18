@@ -38,6 +38,9 @@ export function useOutlookAuth() {
         });
         
         try {
+          // Extract the account type from the state parameter
+          const [userId, accountType = 'personal'] = (state || '').split(':');
+          
           // Call the edge function to complete the authentication
           const response = await supabase.functions.invoke('microsoft-auth', {
             method: 'POST',
@@ -52,14 +55,17 @@ export function useOutlookAuth() {
             throw new Error(response.error.message);
           }
           
+          const accountTypeLabel = response.data?.accountType === 'organizational' ? 
+            'organization' : 'personal';
+          
           toast({
             title: "Success",
-            description: "Your Outlook account has been connected!",
+            description: `Your Outlook ${accountTypeLabel} account has been connected!`,
           });
           
           // Refresh the current page instead of navigating
           window.location.reload();
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error in callback processing:", error);
           toast({
             title: "Connection Error",

@@ -10,7 +10,7 @@ export function useOutlookSync() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const syncEmails = async () => {
+  const syncEmails = async (accountType: string = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -24,12 +24,14 @@ export function useOutlookSync() {
     setError(null);
     
     try {
-      const data = await syncOutlookEmails();
+      const data = await syncOutlookEmails(accountType);
       
       if (data.success) {
+        const accountLabel = accountType === 'organizational' ? 'organization' : 'personal';
+        
         toast({
           title: "Emails Synchronized",
-          description: `Successfully synced ${data.count} emails.`,
+          description: `Successfully synced ${data.count} emails from your ${accountLabel} account.`,
         });
         
         return true;

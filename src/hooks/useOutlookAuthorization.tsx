@@ -2,17 +2,18 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { checkOutlookSetup, initiateOutlookAuthorization } from '@/utils/outlookApi';
+import { checkOutlookSetup, initiateOutlookAuthorization, listOutlookAccounts } from '@/utils/outlookApi';
 
 export function useOutlookAuthorization() {
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [accountType, setAccountType] = useState<'personal' | 'organizational'>('personal');
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const authorizeOutlook = async () => {
+  const authorizeOutlook = async (type: 'personal' | 'organizational' = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -25,6 +26,7 @@ export function useOutlookAuthorization() {
     setIsLoading(true);
     setConfigError(null);
     setAuthError(null);
+    setAccountType(type);
     
     try {
       // First check if setup is complete with detailed logging
@@ -51,22 +53,36 @@ export function useOutlookAuthorization() {
         return;
       }
       
-      console.log('Configuration is valid, proceeding to authorization...');
+      console.log(`Configuration is valid, proceeding to authorization for ${type} account...`);
+      
+      // Check if this account type is already connected
+      const accounts = await listOutlookAccounts();
+      const isAlreadyConnected = accounts.some(acc => acc.account_type === type);
+      
+      if (isAlreadyConnected) {
+        toast({
+          title: "Account Already Connected",
+          description: `Your ${type} Outlook account is already connected.`,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
       
       // Get the current URL for building the redirect
       const currentUrl = new URL(window.location.href);
       const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
       const callbackUrl = `${baseUrl}/inbox`;
       
-      // Get the authorization URL
-      const url = await initiateOutlookAuthorization(callbackUrl);
+      // Get the authorization URL with the account type
+      const url = await initiateOutlookAuthorization(type, callbackUrl);
       
       // Set the auth URL to be used by the UI
       setAuthUrl(url);
       
       toast({
         title: "Authentication Ready",
-        description: "Please complete the authentication in the dialog.",
+        description: `Please complete the authentication for your ${type} account in the dialog.`,
       });
       
     } catch (err: any) {
@@ -94,6 +110,7 @@ export function useOutlookAuthorization() {
     configError,
     authUrl,
     authError,
+    accountType,
     authorizeOutlook,
     resetAuthUrl
   };
