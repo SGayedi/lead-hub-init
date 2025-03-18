@@ -142,6 +142,7 @@ serve(async (req) => {
 
     // Get the Microsoft endpoint based on account type
     const msEndpoint = getMicrosoftOAuthEndpoint(accountType);
+    console.log(`Using Microsoft endpoint: ${msEndpoint} for account type: ${accountType}`);
 
     switch (path) {
       case 'authorize': {
@@ -161,7 +162,7 @@ serve(async (req) => {
           // Ensure the redirect URI is properly encoded
           const encodedRedirectUri = encodeURIComponent(redirectUri);
           
-          // Generate the auth URL, now using the endpoint based on account type
+          // Generate the auth URL, using the endpoint based on account type
           const authUrl = `https://login.microsoftonline.com/${msEndpoint}/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}:${accountType}`;
           
           console.log('Generated auth URL:', authUrl);
@@ -170,7 +171,9 @@ serve(async (req) => {
             JSON.stringify({ 
               url: authUrl,
               isHttps: isHttps,
-              redirectUri: redirectUri 
+              redirectUri: redirectUri,
+              accountType: accountType,
+              clientId: MS_CLIENT_ID ? MS_CLIENT_ID.substring(0, 5) + '...' : 'missing'
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
@@ -185,7 +188,20 @@ serve(async (req) => {
       
       case 'callback': {
         console.log('Handling callback request');
-        const { code, state } = body;
+        const { code, state, error: authError, error_description } = body;
+        
+        // Handle error returned from Microsoft
+        if (authError) {
+          console.error('Auth error from Microsoft:', authError, error_description);
+          return new Response(
+            JSON.stringify({ 
+              error: authError, 
+              errorDescription: error_description,
+              helpText: getErrorHelpText(authError, error_description)
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         
         if (!code) {
           return new Response(
@@ -235,7 +251,11 @@ serve(async (req) => {
         if (!tokenResponse.ok) {
           console.error('Token exchange error:', tokenData);
           return new Response(
-            JSON.stringify({ error: 'Failed to exchange code for token', details: tokenData }),
+            JSON.stringify({ 
+              error: 'Failed to exchange code for token', 
+              details: tokenData,
+              helpText: getErrorHelpText(tokenData.error, tokenData.error_description)
+            }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -417,3 +437,42 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to provide useful guidance based on error codes
+function getErrorHelpText(errorCode, errorDescription = '') {
+  const errorDescLower = (errorDescription || '').toLowerCase();
+  
+  switch(errorCode) {
+    case 'unauthorized_client':
+      if (errorDescLower.includes('consumers')) {
+        return `Your Microsoft application is not configured correctly for personal Microsoft accounts. 
+          Please check the following:
+          1. Make sure your application is registered for "Accounts in any organizational directory and personal Microsoft accounts"
+          2. Verify the client ID is correct
+          3. Ensure the application has the correct Microsoft Graph permissions`;
+      } else {
+        return `Your Microsoft application is not properly configured. 
+          Please check your application registration in the Azure portal and ensure:
+          1. The client ID is correct
+          2. The application is configured for the right account types
+          3. The redirect URI is registered correctly`;
+      }
+    
+    case 'invalid_client':
+      return `The application credentials are invalid. 
+        Please check that your client ID and client secret are correct.`;
+      
+    case 'invalid_request':
+      if (errorDescLower.includes('redirect_uri')) {
+        return `The redirect URI doesn't match what's registered in your Microsoft application. 
+          Please add the exact redirect URI to your application's registration in the Azure portal.`;
+      }
+      return `The OAuth request was invalid. Please check all parameters and try again.`;
+      
+    case 'invalid_grant':
+      return `The authorization grant is invalid. This usually means the authorization code has expired or was already used.`;
+      
+    default:
+      return `An error occurred during Microsoft authentication. Please try again or contact support.`;
+  }
+}

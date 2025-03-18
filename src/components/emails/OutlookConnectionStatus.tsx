@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase, Shield, Link } from "lucide-react";
+import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase, Shield, Link, User, Users, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +19,7 @@ interface OutlookConnectionStatusProps {
   authError?: string | null;
   accountType: 'personal' | 'organizational';
   connectedAccounts?: Array<{account_type: string}>;
-  redirectInfo?: {isHttps: boolean, redirectUri: string} | null;
+  redirectInfo?: {isHttps: boolean, redirectUri: string, accountType: string, clientId?: string} | null;
 }
 
 export function OutlookConnectionStatus({ 
@@ -109,6 +109,144 @@ export function OutlookConnectionStatus({
     setShowAccountPicker(true);
   };
 
+  const renderMicrosoftError = () => {
+    // Cases for different error types
+    if (authError && redirectInfo) {
+      const { accountType = 'personal', clientId } = redirectInfo;
+      
+      // Check for unauthorized_client error (common error shown in the screenshot)
+      if (authError.includes("unauthorized_client") || authError.includes("client does not exist")) {
+        return (
+          <div className="space-y-4">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Microsoft Application Error</AlertTitle>
+              <AlertDescription>
+                <p className="mt-2">
+                  The Microsoft OAuth application is not configured correctly for {accountType === 'personal' ? 'personal' : 'organizational'} accounts.
+                </p>
+                
+                <div className="mt-4">
+                  <p className="font-semibold">Steps to fix "unauthorized_client" error:</p>
+                  <ol className="list-decimal list-inside mt-2 space-y-2">
+                    <li className="mt-2">
+                      Go to the <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" 
+                        target="_blank" rel="noopener noreferrer" className="underline">
+                        Azure Portal App Registrations
+                      </a>
+                    </li>
+                    <li>
+                      Check that your Client ID is correct{clientId ? ` (current: ${clientId})` : ''}
+                    </li>
+                    <li>
+                      Ensure your application is registered for the right type of accounts:
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        {accountType === 'personal' ? (
+                          <li className="py-1 text-red-600 dark:text-red-400 font-medium">
+                            <User className="h-4 w-4 inline mr-1" />
+                            "Accounts in any organizational directory and personal Microsoft accounts"
+                          </li>
+                        ) : (
+                          <li className="py-1 text-red-600 dark:text-red-400 font-medium">
+                            <Users className="h-4 w-4 inline mr-1" />
+                            "Accounts in any organizational directory (Any Azure AD directory - Multitenant)"
+                          </li>
+                        )}
+                      </ul>
+                    </li>
+                    <li>
+                      Verify Microsoft Graph API permissions include:
+                      <ul className="list-disc list-inside ml-4 mt-1">
+                        <li>offline_access</li>
+                        <li>Mail.Read</li>
+                      </ul>
+                    </li>
+                  </ol>
+                </div>
+              </AlertDescription>
+            </Alert>
+            
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Microsoft App Registration Guide</AlertTitle>
+              <AlertDescription>
+                <p className="mt-2">For a quick guide on setting up Microsoft OAuth:</p>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Create a new app registration in Azure Portal</li>
+                  <li>Select the proper account types (including personal accounts)</li>
+                  <li>Add your redirect URI: <span className="font-mono bg-muted p-1 text-xs rounded">{redirectInfo.redirectUri}</span></li>
+                  <li>Add the required API permissions (Mail.Read)</li>
+                  <li>Create a client secret and save it with your client ID</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+      }
+      
+      // General error case with redirect info
+      return (
+        <div className="space-y-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Authentication Error</AlertTitle>
+            <AlertDescription>
+              {authError}
+            </AlertDescription>
+          </Alert>
+          
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Authentication Requirements</AlertTitle>
+            <AlertDescription>
+              <div className="mt-2 space-y-2">
+                <p>
+                  <strong>Account type:</strong> {accountType === 'personal' ? 'Personal' : 'Organizational'}
+                </p>
+                <p>
+                  <strong>Current redirect URL:</strong> {redirectInfo.redirectUri}
+                </p>
+                <p>
+                  <strong>Protocol:</strong> {redirectInfo.isHttps ? 'HTTPS ✓' : 'HTTP ✗'}
+                </p>
+                
+                {!redirectInfo.isHttps && (
+                  <p className="text-red-500">
+                    Microsoft requires HTTPS for authentication. Your application is currently using HTTP.
+                  </p>
+                )}
+                
+                <div className="mt-4">
+                  <p className="font-semibold">How to fix this:</p>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Make sure your application is served over HTTPS</li>
+                    <li>Register your exact redirect URL in your Microsoft application</li>
+                    <li>
+                      <p>The URL to register is:</p>
+                      <p className="bg-muted p-2 mt-1 rounded text-sm break-all">
+                        {redirectInfo.redirectUri}
+                      </p>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
+    
+    // Simple error without redirect info
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          {authError || "An error occurred during authentication"}
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   if (isOutlookConnected === null) {
     return (
       <Card className="bg-card border-border">
@@ -157,7 +295,7 @@ export function OutlookConnectionStatus({
                   className="flex flex-col items-center justify-center h-24 space-y-2"
                   onClick={() => handleConnect('personal')}
                 >
-                  <Mail className="h-8 w-8" />
+                  <User className="h-8 w-8" />
                   <span>Personal Account</span>
                 </Button>
                 <Button 
@@ -177,48 +315,8 @@ export function OutlookConnectionStatus({
           <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
             <SheetContent side="bottom" className="h-[85vh] p-4">
               {authError ? (
-                <div className="p-4 space-y-6">
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      {authError}
-                    </AlertDescription>
-                  </Alert>
-                  
-                  {/* Additional guidance if we have redirect info */}
-                  {redirectInfo && (
-                    <div className="space-y-4">
-                      <Alert>
-                        <Shield className="h-4 w-4" />
-                        <AlertTitle>Authentication Requirements</AlertTitle>
-                        <AlertDescription>
-                          <div className="mt-2 space-y-2">
-                            <p>
-                              <strong>Current redirect URL:</strong> {redirectInfo.redirectUri}
-                            </p>
-                            <p>
-                              <strong>Protocol:</strong> {redirectInfo.isHttps ? 'HTTPS ✓' : 'HTTP ✗'}
-                            </p>
-                            
-                            {!redirectInfo.isHttps && (
-                              <p className="text-red-500">
-                                Microsoft requires HTTPS for authentication. Your application is currently using HTTP.
-                              </p>
-                            )}
-                            
-                            <div className="mt-4">
-                              <p className="font-semibold">How to fix this:</p>
-                              <ol className="list-decimal list-inside mt-2 space-y-1">
-                                <li>Make sure your application is served over HTTPS</li>
-                                <li>Register your exact redirect URL in your Microsoft application</li>
-                                <li>Wait until your HTTPS certificates are fully propagated</li>
-                              </ol>
-                            </div>
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-                  )}
+                <div className="p-4 space-y-6 overflow-y-auto max-h-[80vh]">
+                  {renderMicrosoftError()}
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center">
@@ -238,57 +336,14 @@ export function OutlookConnectionStatus({
           </Sheet>
         ) : (
           <Dialog open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className={authError ? "sm:max-w-[600px]" : "sm:max-w-[425px]"}>
               {authError ? (
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Authentication Error</DialogTitle>
+                    <DialogTitle>Microsoft Authentication Error</DialogTitle>
                   </DialogHeader>
                   
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      {authError}
-                    </AlertDescription>
-                  </Alert>
-                  
-                  {/* Additional guidance if we have redirect info */}
-                  {redirectInfo && (
-                    <Alert>
-                      <Shield className="h-4 w-4" />
-                      <AlertTitle>Authentication Requirements</AlertTitle>
-                      <AlertDescription>
-                        <div className="mt-2 space-y-2">
-                          <p>
-                            <strong>Current redirect URL:</strong> {redirectInfo.redirectUri}
-                          </p>
-                          <p>
-                            <strong>Protocol:</strong> {redirectInfo.isHttps ? 'HTTPS ✓' : 'HTTP ✗'}
-                          </p>
-                          
-                          {!redirectInfo.isHttps && (
-                            <p className="text-red-500">
-                              Microsoft requires HTTPS for authentication. Your application is currently using HTTP.
-                            </p>
-                          )}
-                          
-                          <div className="mt-4">
-                            <p className="font-semibold">How to fix this:</p>
-                            <ol className="list-decimal list-inside mt-2 space-y-1">
-                              <li>Make sure your application is served over HTTPS</li>
-                              <li>Register the exact redirect URL in the Microsoft Azure portal</li>
-                              <li>
-                                <p>The URL to register is:</p>
-                                <p className="bg-muted p-2 mt-1 rounded text-sm break-all">
-                                  {redirectInfo.redirectUri}
-                                </p>
-                              </li>
-                            </ol>
-                          </div>
-                        </div>
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  {renderMicrosoftError()}
                 </div>
               ) : (
                 <div className="text-center py-4">

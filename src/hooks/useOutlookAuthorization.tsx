@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { checkOutlookSetup, initiateOutlookAuthorization, listOutlookAccounts, OutlookAccountType } from '@/utils/outlookApi';
@@ -9,7 +9,7 @@ export function useOutlookAuthorization() {
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [redirectInfo, setRedirectInfo] = useState<{isHttps: boolean, redirectUri: string} | null>(null);
+  const [redirectInfo, setRedirectInfo] = useState<{isHttps: boolean, redirectUri: string, accountType: string, clientId?: string} | null>(null);
   const [accountType, setAccountType] = useState<OutlookAccountType>('personal');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -92,7 +92,9 @@ export function useOutlookAuthorization() {
         setAuthUrl(response.url);
         setRedirectInfo({
           isHttps: response.isHttps,
-          redirectUri: response.redirectUri
+          redirectUri: response.redirectUri,
+          accountType: response.accountType || type,
+          clientId: response.clientId
         });
         
         // If not HTTPS, show a specific error about the URL protocol
@@ -112,12 +114,26 @@ export function useOutlookAuthorization() {
       
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
+      
+      // Check for specific error related to Microsoft client
       const errorMsg = err.message || 'Failed to connect to Outlook';
       setConfigError(errorMsg);
-      setAuthError(
-        "Authentication failed. Please ensure your Microsoft account allows authentication from this domain. " +
-        "This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application."
-      );
+      
+      // Check for specific Microsoft error messages
+      if (errorMsg.includes('unauthorized_client') || 
+          errorMsg.includes('invalid_client') || 
+          errorMsg.includes('client does not exist')) {
+        setAuthError(
+          "Microsoft application configuration error: The client ID may be invalid or not configured correctly for " +
+          "the type of account you're trying to use. Please check your Microsoft application registration in the Azure portal."
+        );
+      } else {
+        setAuthError(
+          "Authentication failed. Please ensure your Microsoft account allows authentication from this domain. " +
+          "This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application."
+        );
+      }
+      
       toast({
         title: "Authorization Failed",
         description: errorMsg,
