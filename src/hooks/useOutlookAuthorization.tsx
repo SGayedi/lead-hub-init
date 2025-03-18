@@ -9,7 +9,7 @@ export function useOutlookAuthorization() {
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [redirectInfo, setRedirectInfo] = useState<{isHttps: boolean, redirectUri: string, accountType: string, clientId?: string} | null>(null);
+  const [redirectInfo, setRedirectInfo] = useState<{isHttps: boolean, redirectUri: string, accountType: string, clientId?: string, error?: string} | null>(null);
   const [accountType, setAccountType] = useState<OutlookAccountType>('personal');
   const { toast } = useToast();
   const { user } = useAuth();
@@ -94,7 +94,8 @@ export function useOutlookAuthorization() {
           isHttps: response.isHttps,
           redirectUri: response.redirectUri,
           accountType: response.accountType || type,
-          clientId: response.clientId
+          clientId: response.clientId,
+          error: response.error
         });
         
         // If not HTTPS, show a specific error about the URL protocol
@@ -123,10 +124,27 @@ export function useOutlookAuthorization() {
       if (errorMsg.includes('unauthorized_client') || 
           errorMsg.includes('invalid_client') || 
           errorMsg.includes('client does not exist')) {
-        setAuthError(
-          "Microsoft application configuration error: The client ID may be invalid or not configured correctly for " +
-          "the type of account you're trying to use. Please check your Microsoft application registration in the Azure portal."
-        );
+            
+        // Check if this is the specific "not enabled for consumers" error
+        if (errorMsg.toLowerCase().includes('not enabled for consumers')) {
+          setAuthError(
+            "Your Microsoft application is not configured to allow personal Microsoft accounts. " +
+            "When registering your application in Azure, you need to select " +
+            "'Accounts in any organizational directory and personal Microsoft accounts'."
+          );
+          
+          setRedirectInfo({
+            isHttps: true,
+            redirectUri: "See Azure Portal",
+            accountType: type,
+            error: "consumer_accounts_not_enabled"
+          });
+        } else {
+          setAuthError(
+            "Microsoft application configuration error: The client ID may be invalid or not configured correctly for " +
+            "the type of account you're trying to use. Please check your Microsoft application registration in the Azure portal."
+          );
+        }
       } else {
         setAuthError(
           "Authentication failed. Please ensure your Microsoft account allows authentication from this domain. " +

@@ -173,14 +173,21 @@ serve(async (req) => {
               isHttps: isHttps,
               redirectUri: redirectUri,
               accountType: accountType,
-              clientId: MS_CLIENT_ID ? MS_CLIENT_ID.substring(0, 5) + '...' : 'missing'
+              clientId: MS_CLIENT_ID ? MS_CLIENT_ID.substring(0, 8) + '...' : 'missing',
+              error: null
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         } catch (error) {
           console.error('Error generating authorize URL:', error);
           return new Response(
-            JSON.stringify({ error: `Error generating authorize URL: ${error.message}` }),
+            JSON.stringify({ 
+              error: `Error generating authorize URL: ${error.message}`,
+              isHttps: false,
+              redirectUri: "Error generating URL",
+              accountType: accountType,
+              error: "url_generation_error"
+            }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }

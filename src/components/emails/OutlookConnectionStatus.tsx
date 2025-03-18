@@ -19,7 +19,7 @@ interface OutlookConnectionStatusProps {
   authError?: string | null;
   accountType: 'personal' | 'organizational';
   connectedAccounts?: Array<{account_type: string}>;
-  redirectInfo?: {isHttps: boolean, redirectUri: string, accountType: string, clientId?: string} | null;
+  redirectInfo?: {isHttps: boolean, redirectUri: string, accountType: string, clientId?: string, error?: string} | null;
 }
 
 export function OutlookConnectionStatus({ 
@@ -110,6 +110,60 @@ export function OutlookConnectionStatus({
   };
 
   const renderMicrosoftError = () => {
+    // Handle the specific "consumer accounts not enabled" error scenario
+    if (redirectInfo?.error === "consumer_accounts_not_enabled" || 
+        (authError && (authError.includes("not enabled for consumers") || 
+                       authError.includes("not configured to allow personal Microsoft accounts")))) {
+      return (
+        <div className="space-y-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Microsoft Application Configuration Error</AlertTitle>
+            <AlertDescription>
+              <p className="mt-2">
+                Your Microsoft application is not configured to allow personal Microsoft accounts.
+              </p>
+              
+              <div className="mt-4">
+                <p className="font-semibold">To fix this error:</p>
+                <ol className="list-decimal list-inside mt-2 space-y-2">
+                  <li className="mt-2">
+                    Go to the <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" 
+                      target="_blank" rel="noopener noreferrer" className="underline">
+                      Azure Portal App Registrations
+                    </a>
+                  </li>
+                  <li>
+                    Click on your existing application or create a new one
+                  </li>
+                  <li className="font-medium text-red-600 dark:text-red-400">
+                    Under "Supported account types", select:
+                    <div className="bg-muted p-2 rounded mt-2 text-foreground">
+                      <strong>Accounts in any organizational directory and personal Microsoft accounts</strong>
+                    </div>
+                  </li>
+                  <li>
+                    <img 
+                      src="/lovable-uploads/e6c97d15-08ec-4dba-b4b9-253c894e768b.png" 
+                      alt="Microsoft account type selection screen" 
+                      className="border rounded mt-2 mb-2 max-w-full"
+                    />
+                    <p className="text-sm mt-1">
+                      You currently have selected "Accounts in any organizational directory" which 
+                      does not include personal accounts
+                    </p>
+                  </li>
+                  <li>
+                    After changing this setting, you'll need to update your client ID and secret
+                  </li>
+                </ol>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
+    
     // Cases for different error types
     if (authError && redirectInfo) {
       const { accountType = 'personal', clientId } = redirectInfo;
