@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -282,14 +281,24 @@ export default function UserManagement() {
     try {
       setIsDeleting(true);
       
-      // First, delete the user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(
-        userToDelete.id
+      // Call our Edge Function instead of directly using supabase.auth.admin.deleteUser
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({ userId: userToDelete.id }),
+        }
       );
       
-      if (authError) throw authError;
+      const data = await response.json();
       
-      // The profile will be automatically deleted due to on delete cascade
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
       
       toast.success('User has been permanently deleted');
       setDeleteDialogOpen(false);
