@@ -24,14 +24,14 @@ export default function Dashboard() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   
   const tasksDueToday = tasks?.filter(task => {
-    const dueDate = new Date(task.due_date);
+    const dueDate = new Date(task.dueDate);
     dueDate.setHours(0, 0, 0, 0);
     return dueDate.getTime() === today.getTime();
   }).length || 0;
 
   // Count meetings for today
   const meetingsToday = meetings?.filter(meeting => {
-    const meetingDate = new Date(meeting.start_time);
+    const meetingDate = new Date(meeting.startTime);
     meetingDate.setHours(0, 0, 0, 0);
     return meetingDate.getTime() === today.getTime();
   }).length || 0;
@@ -152,7 +152,7 @@ export default function Dashboard() {
                     <div className="ml-4 space-y-1">
                       <p className="text-sm font-medium leading-none">{task.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        Due {new Date(task.due_date).toLocaleDateString()}
+                        Due {new Date(task.dueDate).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ export default function Dashboard() {
                     <div className="ml-4 space-y-1">
                       <p className="text-sm font-medium leading-none">{meeting.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(meeting.start_time).toLocaleString()}
+                        {new Date(meeting.startTime).toLocaleString()}
                       </p>
                     </div>
                   </div>
