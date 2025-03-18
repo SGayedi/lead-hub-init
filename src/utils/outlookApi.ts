@@ -1,4 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
+
+// Define the account type to ensure consistency across all functions
+export type OutlookAccountType = 'personal' | 'organizational';
 
 // Check if Outlook configuration is complete
 export async function checkOutlookSetup() {
@@ -23,7 +27,7 @@ export async function checkOutlookSetup() {
 }
 
 // Call the Edge Function to sync emails
-export async function syncOutlookEmails(accountType: 'personal' | 'organizational' = 'personal') {
+export async function syncOutlookEmails(accountType: OutlookAccountType = 'personal') {
   try {
     const { data, error } = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
@@ -78,7 +82,7 @@ export async function listOutlookAccounts() {
 }
 
 // Disconnect a specific account
-export async function disconnectOutlookAccount(accountType: 'personal' | 'organizational' = 'personal') {
+export async function disconnectOutlookAccount(accountType: OutlookAccountType = 'personal') {
   try {
     const { error } = await supabase.rpc('disconnect_outlook', { account_type_param: accountType });
     
@@ -95,7 +99,7 @@ export async function disconnectOutlookAccount(accountType: 'personal' | 'organi
 }
 
 // Initiate Microsoft OAuth flow
-export async function initiateOutlookAuthorization(accountType: 'personal' | 'organizational' = 'personal', callbackUrl?: string) {
+export async function initiateOutlookAuthorization(accountType: OutlookAccountType = 'personal', callbackUrl?: string) {
   try {
     console.log(`Starting Microsoft OAuth flow for ${accountType} account...`);
     

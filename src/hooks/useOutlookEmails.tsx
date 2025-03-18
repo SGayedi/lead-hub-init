@@ -4,7 +4,7 @@ import { useOutlookEmailFetch } from './useOutlookEmailFetch';
 import { useOutlookSync } from './useOutlookSync';
 import { useOutlookAuthorization } from './useOutlookAuthorization';
 import { OutlookEmail } from '@/types/outlook';
-import { listOutlookAccounts, disconnectOutlookAccount } from '@/utils/outlookApi';
+import { listOutlookAccounts, disconnectOutlookAccount, OutlookAccountType } from '@/utils/outlookApi';
 import { toast } from 'sonner';
 
 export type { OutlookEmail };
@@ -38,7 +38,7 @@ export function useOutlookEmails() {
   }, []);
   
   // Function to disconnect a specific account
-  const disconnectAccount = async (accountType: 'personal' | 'organizational') => {
+  const disconnectAccount = async (accountType: OutlookAccountType) => {
     try {
       await disconnectOutlookAccount(accountType);
       // Update the connected accounts list

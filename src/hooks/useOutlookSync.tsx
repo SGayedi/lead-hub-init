@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { syncOutlookEmails } from '@/utils/outlookApi';
+import { syncOutlookEmails, OutlookAccountType } from '@/utils/outlookApi';
 
 export function useOutlookSync() {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,7 +10,7 @@ export function useOutlookSync() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const syncEmails = async (accountType: 'personal' | 'organizational' = 'personal') => {
+  const syncEmails = async (accountType: OutlookAccountType = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication Required",

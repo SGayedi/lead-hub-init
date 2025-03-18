@@ -2,18 +2,18 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { checkOutlookSetup, initiateOutlookAuthorization, listOutlookAccounts } from '@/utils/outlookApi';
+import { checkOutlookSetup, initiateOutlookAuthorization, listOutlookAccounts, OutlookAccountType } from '@/utils/outlookApi';
 
 export function useOutlookAuthorization() {
   const [isLoading, setIsLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [authUrl, setAuthUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [accountType, setAccountType] = useState<'personal' | 'organizational'>('personal');
+  const [accountType, setAccountType] = useState<OutlookAccountType>('personal');
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const authorizeOutlook = async (type: 'personal' | 'organizational' = 'personal') => {
+  const authorizeOutlook = async (type: OutlookAccountType = 'personal') => {
     if (!user) {
       toast({
         title: "Authentication Required",
