@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Users, Briefcase, Calendar, Mail, CheckSquare, Kanban, Settings, Plus, ListChecks } from "lucide-react";
@@ -52,7 +51,7 @@ export function AppSidebar() {
       </div>
       
       <nav className="grid items-start px-3 py-2 lg:px-4">
-        <Link to="/" className={getSidebarItemClass(pathname === '/')}>
+        <Link to="/dashboard" className={getSidebarItemClass(pathname === '/dashboard')}>
           <Home className="h-5 w-5 mr-3" />
           Dashboard
         </Link>

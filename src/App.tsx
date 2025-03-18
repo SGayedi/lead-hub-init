@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 
 // Pages
 import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import Opportunities from './pages/Opportunities';
 import Pipeline from './pages/Pipeline';
@@ -47,6 +48,11 @@ function App() {
                 {/* CRM Routes */}
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Index />} />
+                  <Route path="dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
                   <Route path="leads" element={
                     <ProtectedRoute>
                       <Leads />
