@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -78,7 +77,7 @@ export function TaskEditForm({ task, onSuccess, onCancel }: TaskEditFormProps) {
     deleteTask.mutate(task.id, {
       onSuccess: () => {
         setDeleteDialogOpen(false);
-        onSuccess?.();
+        if (onSuccess) onSuccess();
       }
     });
   };

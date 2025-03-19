@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -168,8 +167,17 @@ export function useTasks(filter: TaskFilter = {}) {
         .eq('id', taskId);
       
       if (error) throw error;
+      
+      return taskId; // Return the ID of the deleted task
     },
-    onSuccess: () => {
+    onSuccess: (deletedTaskId) => {
+      // Immediately update the cache to remove the deleted task
+      queryClient.setQueryData(
+        ['tasks'], 
+        (oldData: Task[] | undefined) => oldData ? oldData.filter(task => task.id !== deletedTaskId) : []
+      );
+      
+      // Also invalidate any queries that might be affected
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task deleted successfully');
     },

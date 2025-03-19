@@ -106,6 +106,10 @@ export default function Tasks() {
     </div>
   );
   
+  const handleTaskDeleted = () => {
+    setSelectedTask(null);
+  };
+  
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -301,7 +305,7 @@ export default function Tasks() {
           {selectedTask && (
             <TaskEditForm 
               task={selectedTask} 
-              onSuccess={() => setSelectedTask(null)} 
+              onSuccess={handleTaskDeleted} 
               onCancel={() => setSelectedTask(null)}
             />
           )}
