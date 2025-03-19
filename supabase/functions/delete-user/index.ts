@@ -27,7 +27,7 @@ serve(async (req) => {
 
     // Get the user ID from the request body
     const { userId } = await req.json();
-
+    
     if (!userId) {
       return new Response(
         JSON.stringify({ error: "User ID is required" }),
@@ -38,10 +38,13 @@ serve(async (req) => {
       );
     }
 
-    // Delete the user
+    console.log(`Attempting to delete user with ID: ${userId}`);
+
+    // Delete the user with the admin API
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
+      console.error(`Error deleting user: ${error.message}`);
       return new Response(
         JSON.stringify({ error: error.message }),
         {
@@ -51,6 +54,7 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Successfully deleted user with ID: ${userId}`);
     return new Response(
       JSON.stringify({ success: true }),
       {
@@ -59,6 +63,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error(`Unexpected error: ${error.message}`);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

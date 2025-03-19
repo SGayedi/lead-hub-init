@@ -289,13 +289,20 @@ export default function UserManagement() {
         throw new Error('SUPABASE_URL is not defined');
       }
       
-      // Get the current session for auth token
-      const { data: sessionData } = await supabase.auth.getSession();
+      // Get a fresh session token
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw new Error(`Failed to get session: ${sessionError.message}`);
+      }
+      
       const accessToken = sessionData.session?.access_token;
       
       if (!accessToken) {
         throw new Error('You must be logged in to delete a user');
       }
+      
+      console.log("Calling delete user function with token available:", !!accessToken);
       
       // Call our Edge Function with proper error handling
       const response = await fetch(
@@ -309,6 +316,9 @@ export default function UserManagement() {
           body: JSON.stringify({ userId: userToDelete.id }),
         }
       );
+      
+      // For debugging - log the status and headers
+      console.log("Delete user response status:", response.status);
       
       // Check if response is ok before trying to parse JSON
       if (!response.ok) {
