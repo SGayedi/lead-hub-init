@@ -77,6 +77,7 @@ export function TaskEditForm({ task, onSuccess, onCancel }: TaskEditFormProps) {
   const handleDelete = () => {
     deleteTask.mutate(task.id, {
       onSuccess: () => {
+        setDeleteDialogOpen(false);
         onSuccess?.();
       }
     });
