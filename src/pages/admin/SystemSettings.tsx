@@ -85,8 +85,8 @@ export default function SystemSettings() {
     try {
       setIsSaving(true);
       
-      // Prepare settings objects
-      const settingsToUpsert = [
+      // Prepare settings objects with their keys
+      const settingsToSave = [
         {
           key: 'company_name',
           value: { value: companyName },
@@ -125,41 +125,35 @@ export default function SystemSettings() {
         }
       ];
       
-      // Find existing settings
-      const existingSettings = new Set(settings.map(s => s.key));
+      // Get existing settings keys for comparison
+      const existingSettingsMap = new Map(settings.map(s => [s.key, s.id]));
       
-      // Separate into updates and inserts
-      const updates = settingsToUpsert.filter(s => existingSettings.has(s.key))
-        .map(s => ({
-          key: s.key,
-          value: s.value,
-          updated_by: adminUser.id
-        }));
-      
-      const inserts = settingsToUpsert.filter(s => !existingSettings.has(s.key))
-        .map(s => ({
-          key: s.key,
-          value: s.value,
-          description: s.description,
-          updated_by: adminUser.id
-        }));
-      
-      // Perform updates if any
-      if (updates.length > 0) {
-        const { error: updateError } = await supabase
-          .from('system_settings')
-          .upsert(updates);
-        
-        if (updateError) throw updateError;
-      }
-      
-      // Perform inserts if any
-      if (inserts.length > 0) {
-        const { error: insertError } = await supabase
-          .from('system_settings')
-          .insert(inserts);
-        
-        if (insertError) throw insertError;
+      // Process each setting
+      for (const setting of settingsToSave) {
+        if (existingSettingsMap.has(setting.key)) {
+          // Update existing setting
+          const { error } = await supabase
+            .from('system_settings')
+            .update({
+              value: setting.value,
+              updated_by: adminUser.id
+            })
+            .eq('key', setting.key);
+          
+          if (error) throw error;
+        } else {
+          // Insert new setting
+          const { error } = await supabase
+            .from('system_settings')
+            .insert({
+              key: setting.key,
+              value: setting.value,
+              description: setting.description,
+              updated_by: adminUser.id
+            });
+          
+          if (error) throw error;
+        }
       }
       
       // Log the changes
@@ -169,7 +163,7 @@ export default function SystemSettings() {
         performed_by: adminUser.id,
         is_admin: true,
         user_agent: navigator.userAgent,
-        changes: settingsToUpsert.reduce((acc, setting) => {
+        changes: settingsToSave.reduce((acc, setting) => {
           acc[setting.key] = setting.value.value;
           return acc;
         }, {} as Record<string, any>),
