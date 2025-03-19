@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -34,6 +33,7 @@ import {
 } from "lucide-react";
 import { Role } from "@/types/crm";
 import { format } from "date-fns";
+import { SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -282,60 +282,26 @@ export default function UserManagement() {
     try {
       setIsDeleting(true);
       
-      // Get the SUPABASE_URL from window.ENV or import.meta.env
+      // Get the SUPABASE_URL
       const supabaseUrl = window.ENV?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
       
-      if (!supabaseUrl) {
-        throw new Error('SUPABASE_URL is not defined');
-      }
-      
-      // Get a fresh session token
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        throw new Error(`Failed to get session: ${sessionError.message}`);
-      }
-      
-      const accessToken = sessionData.session?.access_token;
-      
-      if (!accessToken) {
-        throw new Error('You must be logged in to delete a user');
-      }
-      
-      console.log("Calling delete user function with token available:", !!accessToken);
-      
-      // Call our Edge Function with proper error handling
+      // Make the request to the edge function
       const response = await fetch(
         `${supabaseUrl}/functions/v1/delete-user`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ userId: userToDelete.id }),
         }
       );
       
-      // For debugging - log the status and headers
-      console.log("Delete user response status:", response.status);
-      
-      // Check if response is ok before trying to parse JSON
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
-        
-        try {
-          // Try to parse as JSON if possible
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || `Failed to delete user: ${response.status}`);
-        } catch (parseError) {
-          // If can't parse as JSON, use text or status
-          throw new Error(`Failed to delete user: ${errorText || response.status}`);
-        }
+        throw new Error(errorText || `Failed to delete user: ${response.status}`);
       }
-      
-      const data = await response.json();
       
       toast.success('User has been permanently deleted');
       setDeleteDialogOpen(false);

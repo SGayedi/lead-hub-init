@@ -14,16 +14,21 @@ serve(async (req) => {
   }
 
   try {
-    // Create a Supabase client with the service role key (has admin privileges)
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          persistSession: false,
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Create a Supabase client with the service role key
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Get the user ID from the request body
     const { userId } = await req.json();
@@ -40,7 +45,17 @@ serve(async (req) => {
 
     console.log(`Attempting to delete user with ID: ${userId}`);
 
-    // Delete the user with the admin API
+    // First delete the profile
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error(`Error deleting profile: ${profileError.message}`);
+    }
+
+    // Then delete the auth user
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
