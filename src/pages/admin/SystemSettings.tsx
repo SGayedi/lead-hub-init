@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -38,7 +37,6 @@ export default function SystemSettings() {
   const [sessionTimeout, setSessionTimeout] = useState("1440"); // 24 hours in minutes
   
   // Appearance settings
-  const [selectedTheme, setSelectedTheme] = useState("default");
   const [interfaceDensity, setInterfaceDensity] = useState("comfortable");
 
   useEffect(() => {
@@ -72,7 +70,6 @@ export default function SystemSettings() {
       setSessionTimeout(settingsMap.session_timeout?.value?.toString() || "1440");
       
       // Initialize appearance settings
-      setSelectedTheme(settingsMap.theme_color?.value || "default");
       setInterfaceDensity(settingsMap.interface_density?.value || "comfortable");
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -121,11 +118,6 @@ export default function SystemSettings() {
           description: 'Session timeout in minutes'
         },
         // Appearance settings
-        {
-          key: 'theme_color',
-          value: { value: selectedTheme },
-          description: 'Color theme for the application'
-        },
         {
           key: 'interface_density',
           value: { value: interfaceDensity },
@@ -325,8 +317,6 @@ export default function SystemSettings() {
             </CardHeader>
             <CardContent>
               <AppearanceSettings 
-                selectedTheme={selectedTheme}
-                onThemeChange={setSelectedTheme}
                 interfaceDensity={interfaceDensity}
                 onDensityChange={setInterfaceDensity}
               />
