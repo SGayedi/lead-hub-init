@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/ThemeProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -39,83 +38,85 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="crm-theme">
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <AuthProvider>
-            <AdminAuthProvider>
-              <Routes>
-                {/* CRM Routes */}
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Index />} />
-                  <Route path="dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="leads" element={
-                    <ProtectedRoute>
-                      <Leads />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="opportunities" element={
-                    <ProtectedRoute>
-                      <Opportunities />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="pipeline" element={
-                    <ProtectedRoute>
-                      <Pipeline />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="inbox" element={
-                    <ProtectedRoute>
-                      <Inbox />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="calendar" element={
-                    <ProtectedRoute>
-                      <Calendar />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="tasks" element={
-                    <ProtectedRoute>
-                      <Tasks />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="meetings" element={
-                    <ProtectedRoute>
-                      <Meetings />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="settings" element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-                <Route path="/auth" element={<Auth />} />
-                
-                {/* Admin Routes */}
-                <Route path="/admin" element={
-                  <AdminProtectedRoute>
-                    <AdminLayout />
-                  </AdminProtectedRoute>
-                }>
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="users" element={<UserManagement />} />
-                  <Route path="settings" element={<SystemSettings />} />
-                  <Route path="emails" element={<EmailTemplates />} />
-                  <Route path="data" element={<DataManagement />} />
-                </Route>
-              </Routes>
-              <Toaster />
-            </AdminAuthProvider>
-          </AuthProvider>
-        </Router>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <React.StrictMode>
+      <ThemeProvider defaultTheme="light" storageKey="crm-theme">
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <AuthProvider>
+              <AdminAuthProvider>
+                <Routes>
+                  {/* CRM Routes */}
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Index />} />
+                    <Route path="dashboard" element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="leads" element={
+                      <ProtectedRoute>
+                        <Leads />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="opportunities" element={
+                      <ProtectedRoute>
+                        <Opportunities />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="pipeline" element={
+                      <ProtectedRoute>
+                        <Pipeline />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="inbox" element={
+                      <ProtectedRoute>
+                        <Inbox />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="calendar" element={
+                      <ProtectedRoute>
+                        <Calendar />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="tasks" element={
+                      <ProtectedRoute>
+                        <Tasks />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="meetings" element={
+                      <ProtectedRoute>
+                        <Meetings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="settings" element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                  <Route path="/auth" element={<Auth />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin" element={
+                    <AdminProtectedRoute>
+                      <AdminLayout />
+                    </AdminProtectedRoute>
+                  }>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="users" element={<UserManagement />} />
+                    <Route path="settings" element={<SystemSettings />} />
+                    <Route path="emails" element={<EmailTemplates />} />
+                    <Route path="data" element={<DataManagement />} />
+                  </Route>
+                </Routes>
+                <Toaster />
+              </AdminAuthProvider>
+            </AuthProvider>
+          </Router>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </React.StrictMode>
   );
 }
 
