@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
+import { AppearanceSettings } from "@/components/admin/AppearanceSettings";
 
 interface SystemSetting {
   id: string;
@@ -35,6 +36,10 @@ export default function SystemSettings() {
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(true);
   const [defaultRole, setDefaultRole] = useState("investor_services");
   const [sessionTimeout, setSessionTimeout] = useState("1440"); // 24 hours in minutes
+  
+  // Appearance settings
+  const [selectedTheme, setSelectedTheme] = useState("default");
+  const [interfaceDensity, setInterfaceDensity] = useState("comfortable");
 
   useEffect(() => {
     if (adminUser) {
@@ -65,6 +70,10 @@ export default function SystemSettings() {
       setEmailVerificationRequired(settingsMap.email_verification_required?.value ?? true);
       setDefaultRole(settingsMap.default_role?.value || "investor_services");
       setSessionTimeout(settingsMap.session_timeout?.value?.toString() || "1440");
+      
+      // Initialize appearance settings
+      setSelectedTheme(settingsMap.theme_color?.value || "default");
+      setInterfaceDensity(settingsMap.interface_density?.value || "comfortable");
     } catch (error) {
       console.error('Error fetching settings:', error);
       toast.error('Failed to load system settings');
@@ -110,6 +119,17 @@ export default function SystemSettings() {
           key: 'session_timeout',
           value: { value: parseInt(sessionTimeout) },
           description: 'Session timeout in minutes'
+        },
+        // Appearance settings
+        {
+          key: 'theme_color',
+          value: { value: selectedTheme },
+          description: 'Color theme for the application'
+        },
+        {
+          key: 'interface_density',
+          value: { value: interfaceDensity },
+          description: 'UI density (comfortable or compact)'
         }
       ];
       
@@ -304,9 +324,12 @@ export default function SystemSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Appearance settings will be available in a future update
-              </p>
+              <AppearanceSettings 
+                selectedTheme={selectedTheme}
+                onThemeChange={setSelectedTheme}
+                interfaceDensity={interfaceDensity}
+                onDensityChange={setInterfaceDensity}
+              />
             </CardContent>
           </Card>
         </TabsContent>
