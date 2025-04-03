@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -28,14 +27,25 @@ const getRedirectUri = (req, callbackUrl) => {
     const url = new URL(req.url);
     const baseUrl = `${url.origin}`;
     
+    // Detect if this is the custom domain (afezcrm.com)
+    const isCustomDomain = baseUrl.includes('afezcrm.com');
+    
     // Log the auto-detected URL for debugging
     console.log(`Auto-detected base URL: ${baseUrl}`);
+    console.log(`Is custom domain: ${isCustomDomain}`);
+    
+    // For afezcrm.com domain, ensure we return a proper redirect URL
+    if (isCustomDomain) {
+      return `https://afezcrm.com/inbox`;
+    }
     
     // Return a path based on the current domain
     return `${baseUrl}/inbox`;
   } catch (e) {
     console.error("Could not extract origin from request URL:", e);
-    return "https://your-domain.com/inbox"; // Default fallback - instruct users to update this
+    
+    // Default to the custom domain if we can't determine the origin
+    return "https://afezcrm.com/inbox";
   }
 };
 
@@ -61,6 +71,7 @@ serve(async (req) => {
   }
   
   console.log(`Handling request for: ${req.url}`);
+  console.log(`Request origin: ${new URL(req.url).origin}`);
 
   try {
     // Initialize Supabase client

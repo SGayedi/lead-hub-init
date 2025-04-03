@@ -84,6 +84,10 @@ export async function listOutlookAccounts() {
 // Disconnect a specific account
 export async function disconnectOutlookAccount(accountType: OutlookAccountType = 'personal') {
   try {
+    // Log domain information for debugging
+    console.log("Current domain during disconnect:", window.location.hostname);
+    console.log("Is custom domain:", window.location.hostname.includes('afezcrm.com'));
+    
     // Use the edge function instead of RPC
     const { data, error } = await supabase.functions.invoke('disconnect-outlook', {
       method: 'POST',
@@ -105,7 +109,11 @@ export async function disconnectOutlookAccount(accountType: OutlookAccountType =
 // Initiate Microsoft OAuth flow
 export async function initiateOutlookAuthorization(accountType: OutlookAccountType = 'personal', callbackUrl?: string) {
   try {
+    // Log domain information for debugging
     console.log(`Starting Microsoft OAuth flow for ${accountType} account...`);
+    console.log("Current domain during authorization:", window.location.hostname);
+    console.log("Is custom domain:", window.location.hostname.includes('afezcrm.com'));
+    console.log("Callback URL:", callbackUrl);
     
     // Call the authorization endpoint to get the OAuth URL
     const authResponse = await supabase.functions.invoke('microsoft-auth', {

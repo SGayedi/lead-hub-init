@@ -18,6 +18,10 @@ export default function Settings() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [domainInfo, setDomainInfo] = useState<{domain: string, isCustomDomain: boolean}>({
+    domain: window.location.hostname,
+    isCustomDomain: window.location.hostname.includes('afezcrm.com')
+  });
 
   // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
@@ -27,6 +31,9 @@ export default function Settings() {
     let authWindow: Window | null = null;
     
     if (authUrl) {
+      // Log domain info
+      console.log("Domain during OAuth:", domainInfo);
+      
       // Open the auth URL in a new window
       authWindow = window.open(authUrl, 'microsoft-auth', 'width=800,height=600');
       
@@ -51,7 +58,7 @@ export default function Settings() {
     }
     
     return undefined;
-  }, [authUrl, resetAuthUrl]);
+  }, [authUrl, resetAuthUrl, domainInfo]);
   
   useEffect(() => {
     if (!authUrl) {
@@ -79,6 +86,10 @@ export default function Settings() {
   }, []);
 
   const handleOutlookConnect = () => {
+    // Log the current domain during connection attempt
+    console.log("Current domain during connection:", window.location.hostname);
+    console.log("Is custom domain:", window.location.hostname.includes('afezcrm.com'));
+    
     authorizeOutlook();
   };
 
@@ -107,6 +118,15 @@ export default function Settings() {
   return (
     <div className="container py-6 space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      
+      {domainInfo.isCustomDomain && (
+        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+          <Mail className="h-4 w-4" />
+          <AlertDescription>
+            Using custom domain: {domainInfo.domain}
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid gap-6 md:grid-cols-2">
         {/* Email Integration Settings */}

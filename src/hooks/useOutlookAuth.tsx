@@ -41,13 +41,19 @@ export function useOutlookAuth() {
           // Extract the account type from the state parameter
           const [userId, accountType = 'personal'] = (state || '').split(':');
           
+          // Log the current domain for debugging
+          const currentDomain = window.location.hostname;
+          console.log("Current domain for authentication:", currentDomain);
+          
           // Call the edge function to complete the authentication
           const response = await supabase.functions.invoke('microsoft-auth', {
             method: 'POST',
             body: { 
               path: 'callback',
               code,
-              state
+              state,
+              // Pass the callbackUrl if on custom domain
+              callbackUrl: currentDomain.includes('afezcrm.com') ? 'https://afezcrm.com/inbox' : undefined
             },
           });
           
