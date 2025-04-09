@@ -120,7 +120,7 @@ export default function Settings() {
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
       
       {domainInfo.isCustomDomain && (
-        <Alert variant="default" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
           <Mail className="h-4 w-4" />
           <AlertDescription>
             Using custom domain: {domainInfo.domain}
