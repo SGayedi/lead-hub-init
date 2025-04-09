@@ -5,7 +5,7 @@ import { CheckCircle, Clock, AlertCircle } from "lucide-react";
 interface Task {
   id: string;
   title: string;
-  dueDate: string;
+  dueDate?: string; // Made optional to match crm.ts definition
   status: string;
   priority: string;
 }
@@ -50,7 +50,7 @@ export function DashboardActivityCard({ tasks }: DashboardActivityCardProps) {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Due {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
+              {task.dueDate ? `Due ${formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}` : 'No due date'}
             </p>
           </div>
         </div>

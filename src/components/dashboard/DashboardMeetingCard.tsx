@@ -6,6 +6,7 @@ interface Meeting {
   id: string;
   title: string;
   startTime: string;
+  endTime?: string;
   attendees?: string[];
   type?: string;
 }
