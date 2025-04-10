@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -17,35 +18,32 @@ let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 // Set a default fallback redirect URI based on the request URL if not provided
 const getRedirectUri = (req, callbackUrl) => {
   // If a specific callback URL is provided through the API, use it first
-  if (callbackUrl) return callbackUrl;
+  if (callbackUrl) {
+    console.log(`Using provided callback URL: ${callbackUrl}`);
+    return callbackUrl;
+  }
   
   // If a specific REDIRECT_URI is configured in environment variables, use it second
-  if (REDIRECT_URI) return REDIRECT_URI;
+  if (REDIRECT_URI) {
+    console.log(`Using environment REDIRECT_URI: ${REDIRECT_URI}`);
+    return REDIRECT_URI;
+  }
   
   try {
     // Try to extract the origin from the request as a last resort
     const url = new URL(req.url);
-    const baseUrl = `${url.origin}`;
-    
-    // Detect if this is the custom domain (afezcrm.com)
-    const isCustomDomain = baseUrl.includes('afezcrm.com');
+    const baseUrl = `${url.protocol}//${url.host}`;
     
     // Log the auto-detected URL for debugging
     console.log(`Auto-detected base URL: ${baseUrl}`);
-    console.log(`Is custom domain: ${isCustomDomain}`);
-    
-    // For afezcrm.com domain, ensure we return a proper redirect URL
-    if (isCustomDomain) {
-      return `https://afezcrm.com/inbox`;
-    }
     
     // Return a path based on the current domain
     return `${baseUrl}/inbox`;
   } catch (e) {
     console.error("Could not extract origin from request URL:", e);
     
-    // Default to the custom domain if we can't determine the origin
-    return "https://afezcrm.com/inbox";
+    // Fallback to a hardcoded URL
+    return "https://example.com/inbox";
   }
 };
 

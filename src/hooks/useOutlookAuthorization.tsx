@@ -76,21 +76,11 @@ export function useOutlookAuthorization() {
         // Continue with the auth flow even if we can't check accounts
       }
       
-      // Get the current URL for building the redirect
-      const currentUrl = new URL(window.location.href);
-      const isCustomDomain = currentUrl.host.includes('afezcrm.com');
+      // Get the absolute URL for the callback
+      const callbackUrl = `${window.location.origin}/inbox`;
+      console.log("Using absolute callback URL:", callbackUrl);
       
-      // Configure different callback URL for custom domain
-      let callbackUrl;
-      if (isCustomDomain) {
-        callbackUrl = 'https://afezcrm.com/inbox';
-        console.log("Using custom domain callback URL:", callbackUrl);
-      } else {
-        callbackUrl = `${currentUrl.protocol}//${currentUrl.host}/inbox`;
-        console.log("Using standard callback URL:", callbackUrl);
-      }
-      
-      // Get the authorization URL with the account type
+      // Get the authorization URL with the account type and callback URL
       const response = await initiateOutlookAuthorization(type, callbackUrl);
       
       // Check if this is a URL or an object with additional info

@@ -109,18 +109,23 @@ export async function disconnectOutlookAccount(accountType: OutlookAccountType =
 // Initiate Microsoft OAuth flow
 export async function initiateOutlookAuthorization(accountType: OutlookAccountType = 'personal', callbackUrl?: string) {
   try {
+    // Get the absolute URL with origin for the callback
+    const origin = window.location.origin;
+    const defaultCallback = `${origin}/inbox`;
+    
     // Log domain information for debugging
     console.log(`Starting Microsoft OAuth flow for ${accountType} account...`);
     console.log("Current domain during authorization:", window.location.hostname);
-    console.log("Is custom domain:", window.location.hostname.includes('afezcrm.com'));
-    console.log("Callback URL:", callbackUrl);
+    console.log("Using origin:", origin);
+    console.log("Default callback URL:", defaultCallback);
+    console.log("Custom callback URL (if provided):", callbackUrl);
     
     // Call the authorization endpoint to get the OAuth URL
     const authResponse = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
       body: { 
         path: 'authorize',
-        callbackUrl,
+        callbackUrl: callbackUrl || defaultCallback,
         accountType
       },
     });

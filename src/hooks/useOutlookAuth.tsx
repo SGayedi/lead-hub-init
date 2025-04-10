@@ -42,7 +42,7 @@ export function useOutlookAuth() {
           const [userId, accountType = 'personal'] = (state || '').split(':');
           
           // Log the current domain for debugging
-          const currentDomain = window.location.hostname;
+          const currentDomain = window.location.origin;
           console.log("Current domain for authentication:", currentDomain);
           
           // Call the edge function to complete the authentication
@@ -52,8 +52,8 @@ export function useOutlookAuth() {
               path: 'callback',
               code,
               state,
-              // Pass the callbackUrl if on custom domain
-              callbackUrl: currentDomain.includes('afezcrm.com') ? 'https://afezcrm.com/inbox' : undefined
+              // Pass the full callback URL to ensure it matches what was used for authorization
+              callbackUrl: `${currentDomain}/inbox`
             },
           });
           
