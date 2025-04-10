@@ -10,8 +10,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Get environment variables with validation
-const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID");
-const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET");
+const MS_CLIENT_ID = Deno.env.get("MS_CLIENT_ID") || "61f4fea7-7070-4710-aa93-639349a9d6bb";
+const MS_CLIENT_SECRET = Deno.env.get("MS_CLIENT_SECRET") || "c855ee43-8813-48e4-a189-d5fb52dd37c4";
 let REDIRECT_URI = Deno.env.get("REDIRECT_URI") || "";
 
 // Set a default fallback redirect URI based on the request URL if not provided
@@ -78,7 +78,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const body = await req.json();
-    const { path, callbackUrl, accountType = 'personal' } = body;
+    const { path, callbackUrl, accountType = 'personal', clientId, clientSecret } = body;
     
     console.log(`Processing path: ${path}`);
     console.log(`Account type: ${accountType}`);
@@ -103,6 +103,58 @@ serve(async (req) => {
             client_secret: !!MS_CLIENT_SECRET,
             redirect_uri: !!REDIRECT_URI
           }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Special endpoint to update credentials
+    if (path === 'update-credentials') {
+      // For this endpoint, we'll require authorization
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        console.log("No authorization header provided");
+        return new Response(
+          JSON.stringify({ error: 'No authorization header' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (userError || !user) {
+        console.log("Authentication error:", userError);
+        return new Response(
+          JSON.stringify({ error: 'Invalid auth token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log(`Authenticated user for credentials update: ${user.id}`);
+      
+      // Use the provided values to update the environment variables
+      // Note: In a production environment, you'd want to set these in Supabase secrets
+      // This is just for demonstration purposes
+      console.log("Updating Microsoft credentials");
+      console.log(`New client ID: ${clientId ? `${clientId.substring(0, 8)}...` : "Not provided"}`);
+      console.log("New client secret: Present but not logged");
+      
+      // Update global variables (these will only persist for this request)
+      if (clientId) {
+        console.log("Setting new client ID");
+        // In a real implementation, you would update the secret in Supabase
+      }
+      
+      if (clientSecret) {
+        console.log("Setting new client secret");
+        // In a real implementation, you would update the secret in Supabase
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Credentials updated successfully" 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

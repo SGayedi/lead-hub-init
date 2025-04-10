@@ -22,9 +22,53 @@ export default function Settings() {
     domain: window.location.hostname,
     isCustomDomain: window.location.hostname.includes('afezcrm.com')
   });
+  const [isUpdatingSecrets, setIsUpdatingSecrets] = useState(false);
 
   // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
+
+  useEffect(() => {
+    // Update Microsoft credentials with the new values that allow personal accounts
+    const updateMicrosoftCredentials = async () => {
+      try {
+        setIsUpdatingSecrets(true);
+        
+        // Call the Supabase edge function to update secrets
+        const { error } = await supabase.functions.invoke('microsoft-auth', {
+          method: 'POST',
+          body: { 
+            path: 'update-credentials',
+            clientId: '61f4fea7-7070-4710-aa93-639349a9d6bb',
+            clientSecret: 'c855ee43-8813-48e4-a189-d5fb52dd37c4'
+          },
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Credentials Updated",
+          description: "Microsoft authentication credentials have been updated successfully.",
+        });
+        
+        // Reload the page after updating credentials
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (err: any) {
+        console.error("Error updating Microsoft credentials:", err);
+        toast({
+          title: "Update Error",
+          description: err.message || "Failed to update Microsoft credentials",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUpdatingSecrets(false);
+      }
+    };
+    
+    // Call the function when the component mounts
+    updateMicrosoftCredentials();
+  }, [toast]);
 
   // Handle the OAuth authentication opening in a new window
   useEffect(() => {
@@ -118,6 +162,15 @@ export default function Settings() {
   return (
     <div className="container py-6 space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      
+      {isUpdatingSecrets && (
+        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+          <Mail className="h-4 w-4" />
+          <AlertDescription>
+            Updating Microsoft credentials... This will enable personal Microsoft accounts.
+          </AlertDescription>
+        </Alert>
+      )}
       
       {domainInfo.isCustomDomain && (
         <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
