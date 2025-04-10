@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -239,15 +238,26 @@ serve(async (req) => {
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error generating authorize URL:', error);
+          
+          // Check if this is likely a "not enabled for consumers" error
+          const errorMessage = error.message || 'Unknown error';
+          let specialError = null;
+          
+          if (accountType === 'personal' && 
+              (errorMessage.includes('unauthorized_client') || 
+               errorMessage.includes('not enabled for consumers'))) {
+            specialError = "consumer_accounts_not_enabled";
+          }
+          
           return new Response(
             JSON.stringify({ 
-              error: `Error generating authorize URL: ${error.message}`,
-              isHttps: false,
-              redirectUri: "Error generating URL",
+              error: `Error generating authorize URL: ${errorMessage}`,
+              isHttps: redirectUri ? redirectUri.startsWith('https://') : false,
+              redirectUri: redirectUri || "Error generating URL",
               accountType: accountType,
-              error: "url_generation_error"
+              error: specialError || "url_generation_error"
             }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
@@ -494,7 +504,7 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in edge function:', error);
     return new Response(
       JSON.stringify({ 
@@ -512,7 +522,7 @@ function getErrorHelpText(errorCode, errorDescription = '') {
   
   switch(errorCode) {
     case 'unauthorized_client':
-      if (errorDescLower.includes('consumers')) {
+      if (errorDescLower.includes('consumers') || errorDescLower.includes('not enabled for consumers')) {
         return `Your Microsoft application is not configured correctly for personal Microsoft accounts. 
           Please check the following:
           1. Make sure your application is registered for "Accounts in any organizational directory and personal Microsoft accounts"

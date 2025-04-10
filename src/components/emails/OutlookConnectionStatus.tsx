@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { RefreshCw, Mail, LogIn, AlertTriangle, Briefcase, Shield, Link, User, Users, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,14 +75,12 @@ export function OutlookConnectionStatus({
   };
 
   const showAccountTypeSelector = () => {
-    // Try to determine which accounts are already connected
     let hasPersonal, hasOrganizational;
     
     try {
       hasPersonal = connectedAccounts.some(acc => acc.account_type === 'personal');
       hasOrganizational = connectedAccounts.some(acc => acc.account_type === 'organizational');
     } catch (err) {
-      // If we can't determine accounts, assume none are connected
       hasPersonal = false;
       hasOrganizational = false;
     }
@@ -110,10 +107,9 @@ export function OutlookConnectionStatus({
   };
 
   const renderMicrosoftError = () => {
-    // Handle the specific "consumer accounts not enabled" error scenario
     if (redirectInfo?.error === "consumer_accounts_not_enabled" || 
         (authError && (authError.includes("not enabled for consumers") || 
-                       authError.includes("not configured to allow personal Microsoft accounts")))) {
+                      authError.includes("not configured to allow personal Microsoft accounts")))) {
       return (
         <div className="space-y-4">
           <Alert variant="destructive">
@@ -164,11 +160,9 @@ export function OutlookConnectionStatus({
       );
     }
     
-    // Cases for different error types
     if (authError && redirectInfo) {
       const { accountType = 'personal', clientId } = redirectInfo;
       
-      // Check for unauthorized_client error (common error shown in the screenshot)
       if (authError.includes("unauthorized_client") || authError.includes("client does not exist")) {
         return (
           <div className="space-y-4">
@@ -238,7 +232,6 @@ export function OutlookConnectionStatus({
         );
       }
       
-      // General error case with redirect info
       return (
         <div className="space-y-4">
           <Alert variant="destructive">
@@ -290,7 +283,6 @@ export function OutlookConnectionStatus({
       );
     }
     
-    // Simple error without redirect info
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />

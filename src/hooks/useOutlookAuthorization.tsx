@@ -119,31 +119,28 @@ export function useOutlookAuthorization() {
       const errorMsg = err.message || 'Failed to connect to Outlook';
       setConfigError(errorMsg);
       
-      // Check for specific Microsoft error messages
-      if (errorMsg.includes('unauthorized_client') || 
-          errorMsg.includes('invalid_client') || 
+      // Check for specific unauthorized_client error for personal accounts
+      if (errorMsg.includes('unauthorized_client')) {
+        // This specific error means the app is not configured for personal accounts
+        setAuthError(
+          "Your Microsoft application is not configured to allow personal Microsoft accounts. " +
+          "When registering your application in Azure, you need to select " +
+          "'Accounts in any organizational directory and personal Microsoft accounts'."
+        );
+        
+        setRedirectInfo({
+          isHttps: true,
+          redirectUri: "See Azure Portal",
+          accountType: type,
+          error: "consumer_accounts_not_enabled"
+        });
+      } else if (errorMsg.includes('invalid_client') || 
           errorMsg.includes('client does not exist')) {
             
-        // Check if this is the specific "not enabled for consumers" error
-        if (errorMsg.toLowerCase().includes('not enabled for consumers')) {
-          setAuthError(
-            "Your Microsoft application is not configured to allow personal Microsoft accounts. " +
-            "When registering your application in Azure, you need to select " +
-            "'Accounts in any organizational directory and personal Microsoft accounts'."
-          );
-          
-          setRedirectInfo({
-            isHttps: true,
-            redirectUri: "See Azure Portal",
-            accountType: type,
-            error: "consumer_accounts_not_enabled"
-          });
-        } else {
-          setAuthError(
-            "Microsoft application configuration error: The client ID may be invalid or not configured correctly for " +
-            "the type of account you're trying to use. Please check your Microsoft application registration in the Azure portal."
-          );
-        }
+        setAuthError(
+          "Microsoft application configuration error: The client ID may be invalid or not configured correctly for " +
+          "the type of account you're trying to use. Please check your Microsoft application registration in the Azure portal."
+        );
       } else {
         setAuthError(
           "Authentication failed. Please ensure your Microsoft account allows authentication from this domain. " +

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Link, LogIn, AlertTriangle } from "lucide-react";
@@ -158,6 +159,52 @@ export default function Settings() {
     }
   };
 
+  // Helper function to render error content
+  const renderAuthError = () => {
+    if (authError?.includes("not enabled for consumers") || 
+        authError?.includes("unauthorized_client")) {
+      return (
+        <div className="p-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-semibold">Microsoft Application Error</p>
+              <p>Your Microsoft application is not configured to allow personal Microsoft accounts.</p>
+              
+              <div className="mt-4">
+                <p className="font-medium">To fix this error:</p>
+                <ol className="list-decimal list-inside mt-2">
+                  <li>Go to the Azure Portal App Registrations</li>
+                  <li>
+                    Under "Supported account types", select:
+                    <div className="bg-muted p-2 rounded mt-1 text-sm">
+                      <strong>Accounts in any organizational directory and personal Microsoft accounts</strong>
+                    </div>
+                  </li>
+                  <li>Save your changes</li>
+                </ol>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="p-4">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {authError}
+            <p className="mt-2 text-sm">
+              This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
+            </p>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  };
+
   return (
     <div className="container py-6 space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -247,17 +294,7 @@ export default function Settings() {
         <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
           <SheetContent side="bottom" className="h-[85vh] p-4">
             {authError ? (
-              <div className="p-4">
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    {authError}
-                    <p className="mt-2 text-sm">
-                      This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              </div>
+              renderAuthError()
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <h3 className="text-xl font-semibold mb-4">Microsoft Authentication</h3>
@@ -282,15 +319,7 @@ export default function Settings() {
                 <DialogHeader>
                   <DialogTitle>Authentication Error</DialogTitle>
                 </DialogHeader>
-                <Alert variant="destructive" className="mt-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    {authError}
-                    <p className="mt-2">
-                      This could be because Microsoft requires HTTPS for OAuth authentication or the domain isn't registered as a valid redirect URL in your Microsoft application.
-                    </p>
-                  </AlertDescription>
-                </Alert>
+                {renderAuthError()}
               </div>
             ) : (
               <div className="text-center py-4">
