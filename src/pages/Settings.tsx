@@ -164,7 +164,7 @@ export default function Settings() {
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
       
       {isUpdatingSecrets && (
-        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+        <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
           <Mail className="h-4 w-4" />
           <AlertDescription>
             Updating Microsoft credentials... This will enable personal Microsoft accounts.
@@ -173,7 +173,7 @@ export default function Settings() {
       )}
       
       {domainInfo.isCustomDomain && (
-        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+        <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
           <Mail className="h-4 w-4" />
           <AlertDescription>
             Using custom domain: {domainInfo.domain}
