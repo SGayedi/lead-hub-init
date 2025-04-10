@@ -11,9 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MicrosoftCredentialsForm } from "@/components/settings/MicrosoftCredentialsForm";
-import { useAuth } from "@/hooks/useAuth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Settings() {
   const [microsoftStatus, setMicrosoftStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
@@ -21,14 +18,10 @@ export default function Settings() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const { user, userRole } = useAuth();
   const [domainInfo, setDomainInfo] = useState<{domain: string, isCustomDomain: boolean}>({
     domain: window.location.hostname,
     isCustomDomain: window.location.hostname.includes('afezcrm.com')
   });
-
-  // Check if user is senior management
-  const isSeniorManagement = userRole === 'senior_management';
 
   // Process Outlook OAuth callback if present in URL
   useOutlookAuth();
@@ -127,7 +120,7 @@ export default function Settings() {
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
       
       {domainInfo.isCustomDomain && (
-        <Alert variant="default" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
+        <Alert variant="info" className="bg-blue-50 dark:bg-blue-900/20 border-blue-400">
           <Mail className="h-4 w-4" />
           <AlertDescription>
             Using custom domain: {domainInfo.domain}
@@ -135,101 +128,67 @@ export default function Settings() {
         </Alert>
       )}
       
-      <Tabs defaultValue="integrations">
-        <TabsList>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          {isSeniorManagement && (
-            <TabsTrigger value="credentials">Microsoft Credentials</TabsTrigger>
-          )}
-          <TabsTrigger value="account">Account</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="integrations">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Email Integration Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Email Integration
-                </CardTitle>
-                <CardDescription>
-                  Connect your email accounts to sync messages
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Microsoft Outlook */}
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium">Microsoft Outlook</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {microsoftStatus === 'checking' ? 'Checking connection status...' : 
-                      microsoftStatus === 'connected' ? 'Connected' : 'Not connected'}
-                    </p>
-                  </div>
-                  <div>
-                    {microsoftStatus === 'connected' ? (
-                      <Button variant="outline" onClick={handleOutlookDisconnect}>
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button onClick={handleOutlookConnect}>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Connect Outlook
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-center border-t pt-4">
-                <p className="text-xs text-center text-muted-foreground">
-                  Email integrations allow you to sync and manage emails directly in the CRM
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Email Integration Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Integration
+            </CardTitle>
+            <CardDescription>
+              Connect your email accounts to sync messages
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Microsoft Outlook */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-medium">Microsoft Outlook</h3>
+                <p className="text-sm text-muted-foreground">
+                  {microsoftStatus === 'checking' ? 'Checking connection status...' : 
+                   microsoftStatus === 'connected' ? 'Connected' : 'Not connected'}
                 </p>
-              </CardFooter>
-            </Card>
+              </div>
+              <div>
+                {microsoftStatus === 'connected' ? (
+                  <Button variant="outline" onClick={handleOutlookDisconnect}>
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button onClick={handleOutlookConnect}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Connect Outlook
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center border-t pt-4">
+            <p className="text-xs text-center text-muted-foreground">
+              Email integrations allow you to sync and manage emails directly in the CRM
+            </p>
+          </CardFooter>
+        </Card>
 
-            {/* Application Settings - Placeholder for future settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Link className="h-5 w-5" />
-                  Account Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage your account and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-6 text-muted-foreground">
-                  Account settings will be available in a future update
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {isSeniorManagement && (
-          <TabsContent value="credentials">
-            <MicrosoftCredentialsForm />
-          </TabsContent>
-        )}
-
-        <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-              <CardDescription>
-                Manage your account preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-6">
-              <p className="text-muted-foreground">
-                Account settings will be available in a future update
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* Application Settings - Placeholder for future settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Account Settings
+            </CardTitle>
+            <CardDescription>
+              Manage your account and preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center py-6 text-muted-foreground">
+              Account settings will be available in a future update
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Authentication Dialog/Sheet */}
       {isMobile ? (
