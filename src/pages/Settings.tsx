@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Link, LogIn, AlertTriangle } from "lucide-react";
@@ -242,7 +241,7 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
-
+      
       {/* Authentication Dialog/Sheet */}
       {isMobile ? (
         <Sheet open={showAuthPrompt || !!authError} onOpenChange={(open) => !open && resetAuthUrl()}>
