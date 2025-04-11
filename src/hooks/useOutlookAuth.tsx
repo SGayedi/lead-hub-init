@@ -14,6 +14,7 @@ export function useOutlookAuth() {
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
       const error = params.get('error');
+      const error_description = params.get('error_description');
       const state = params.get('state');
       
       if (code || error) {
@@ -22,12 +23,24 @@ export function useOutlookAuth() {
       }
       
       if (error) {
-        console.error("OAuth error:", error);
-        toast({
-          title: "Authentication Failed",
-          description: "Failed to connect your Outlook account. Please try again.",
-          variant: "destructive",
-        });
+        console.error("OAuth error:", error, error_description);
+        
+        // Special handling for unauthorized_client error (personal accounts not enabled)
+        if (error === 'unauthorized_client' && 
+            (error_description?.includes('not enabled for consumers') || 
+             error_description?.includes('AADSTS700016'))) {
+          toast({
+            title: "Microsoft Account Type Error",
+            description: "Your Microsoft application is not configured to allow personal Microsoft accounts. Change your application registration in Azure.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Authentication Failed",
+            description: error_description || "Failed to connect your Outlook account. Please try again.",
+            variant: "destructive",
+          });
+        }
         return;
       }
       
@@ -44,6 +57,7 @@ export function useOutlookAuth() {
           // Log the current domain for debugging
           const currentDomain = window.location.origin;
           console.log("Current domain for authentication:", currentDomain);
+          console.log("Current protocol:", window.location.protocol);
           
           // Call the edge function to complete the authentication
           const response = await supabase.functions.invoke('microsoft-auth', {
@@ -73,11 +87,22 @@ export function useOutlookAuth() {
           window.location.reload();
         } catch (error: any) {
           console.error("Error in callback processing:", error);
-          toast({
-            title: "Connection Error",
-            description: error.message || "Failed to complete Outlook integration. Please try again.",
-            variant: "destructive",
-          });
+          
+          // Special handling for specific errors
+          if (error.message?.includes('unauthorized_client') || 
+              error.message?.includes('not enabled for consumers')) {
+            toast({
+              title: "Microsoft Account Type Error",
+              description: "Your Microsoft application doesn't support personal accounts. Update your Azure app registration.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Connection Error",
+              description: error.message || "Failed to complete Outlook integration. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       }
     };

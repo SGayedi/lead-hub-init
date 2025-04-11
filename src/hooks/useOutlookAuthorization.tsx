@@ -115,12 +115,14 @@ export function useOutlookAuthorization() {
     } catch (err: any) {
       console.error('Error authorizing with Outlook:', err);
       
-      // Check for specific error related to Microsoft client
       const errorMsg = err.message || 'Failed to connect to Outlook';
       setConfigError(errorMsg);
       
-      // Check for specific unauthorized_client error for personal accounts
-      if (errorMsg.includes('unauthorized_client')) {
+      // Handle specific error messages more explicitly
+      if (errorMsg.includes('unauthorized_client') || 
+          errorMsg.toLowerCase().includes('not enabled for consumers') ||
+          errorMsg.toLowerCase().includes('application is not configured')) {
+        
         // This specific error means the app is not configured for personal accounts
         setAuthError(
           "Your Microsoft application is not configured to allow personal Microsoft accounts. " +

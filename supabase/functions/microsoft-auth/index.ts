@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
@@ -69,6 +70,7 @@ serve(async (req) => {
   
   console.log(`Handling request for: ${req.url}`);
   console.log(`Request origin: ${new URL(req.url).origin}`);
+  console.log(`Request method: ${req.method}`);
 
   try {
     // Initialize Supabase client
@@ -203,6 +205,7 @@ serve(async (req) => {
     // Get the Microsoft endpoint based on account type
     const msEndpoint = getMicrosoftOAuthEndpoint(accountType);
     console.log(`Using Microsoft endpoint: ${msEndpoint} for account type: ${accountType}`);
+    console.log(`Current client ID: ${MS_CLIENT_ID.substring(0, 8)}...`);
 
     switch (path) {
       case 'authorize': {
@@ -226,6 +229,7 @@ serve(async (req) => {
           const authUrl = `https://login.microsoftonline.com/${msEndpoint}/oauth2/v2.0/authorize?client_id=${MS_CLIENT_ID}&response_type=code&redirect_uri=${encodedRedirectUri}&response_mode=query&scope=${scope}&state=${user.id}:${accountType}`;
           
           console.log('Generated auth URL:', authUrl);
+          console.log('Using msEndpoint:', msEndpoint);
           
           return new Response(
             JSON.stringify({ 
@@ -248,6 +252,7 @@ serve(async (req) => {
           if (accountType === 'personal' && 
               (errorMessage.includes('unauthorized_client') || 
                errorMessage.includes('not enabled for consumers'))) {
+            console.log("Detected consumer accounts not enabled error");
             specialError = "consumer_accounts_not_enabled";
           }
           

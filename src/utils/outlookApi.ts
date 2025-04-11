@@ -120,6 +120,11 @@ export async function initiateOutlookAuthorization(accountType: OutlookAccountTy
     console.log("Default callback URL:", defaultCallback);
     console.log("Custom callback URL (if provided):", callbackUrl);
     
+    // Add more diagnostic info to help troubleshoot
+    console.log("Document URL:", document.URL);
+    console.log("Window location:", window.location.toString());
+    console.log("Protocol:", window.location.protocol);
+    
     // Call the authorization endpoint to get the OAuth URL
     const authResponse = await supabase.functions.invoke('microsoft-auth', {
       method: 'POST',
@@ -134,6 +139,13 @@ export async function initiateOutlookAuthorization(accountType: OutlookAccountTy
     
     if (authResponse.error) {
       console.error('Error from edge function:', authResponse.error);
+      
+      // Special handling for unauthorized_client which indicates personal accounts not enabled
+      if (authResponse.error.message?.includes('unauthorized_client')) {
+        throw new Error(`Microsoft OAuth Error: The application is not configured to allow personal Microsoft accounts. 
+        When registering your application in Azure, select "Accounts in any organizational directory and personal Microsoft accounts".`);
+      }
+      
       throw new Error(`Authorization failed: ${authResponse.error.message || 'Unknown error'}`);
     }
     
